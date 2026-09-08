@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.IONOXELMS" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- AndroidX SplashScreen API Theme - Transparent Icon removes OS cropping -->
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background_color</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_transparent</item>
+        <item name="postSplashScreenTheme">@style/Theme.IONOXELMS</item>
+    </style>
+</resources>

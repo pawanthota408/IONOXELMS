@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="360dp"
+    android:height="640dp"
+    android:viewportWidth="360"
+    android:viewportHeight="640">
+
+    <!-- White #FFFFFF Base Background (Center 60% completely clean) -->
+    <path
+        android:pathData="M0,0 h360 v640 h-360 z"
+        android:fillColor="#FFFFFF" />
+
+    <!-- TOP-LEFT WAVE SHAPES (GREEN) -->
+    <!-- Top-Left Soft Light Green (#E6F4EA) Outer Wave -->
+    <path
+        android:pathData="M0,0 L220,0 C160,80 100,120 0,220 Z"
+        android:fillColor="#E6F4EA" />
+
+    <!-- Top-Left Soft Green (#D1FAE5) Mid Wave -->
+    <path
+        android:pathData="M0,0 L160,0 C110,60 70,90 0,160 Z"
+        android:fillColor="#D1FAE5" />
+
+    <!-- Top-Left Professional Green (#059669) Accent Wave -->
+    <path
+        android:pathData="M0,0 L110,0 C70,40 40,60 0,110 Z"
+        android:fillColor="#059669" />
+
+
+    <!-- BOTTOM-RIGHT FLOWING WAVES (GREEN) (Flowing Bottom-Right to Top-Left) -->
+    <!-- Bottom-Right Soft Light Green (#E6F4EA) Outer Wave -->
+    <path
+        android:pathData="M110,640 C200,530 260,470 360,350 L360,640 Z"
+        android:fillColor="#E6F4EA" />
+
+    <!-- Bottom-Right Soft Green (#D1FAE5) Mid Wave -->
+    <path
+        android:pathData="M170,640 C240,560 290,510 360,420 L360,640 Z"
+        android:fillColor="#D1FAE5" />
+
+    <!-- Bottom-Right Professional Green (#059669) Accent Wave -->
+    <path
+        android:pathData="M230,640 C280,590 320,550 360,480 L360,640 Z"
+        android:fillColor="#059669" />
+
+
+    <!-- HALFTONE DOTS IN CORNERS (GREEN) -->
+    <!-- Top-Right Halftone Dot Cluster -->
+    <!-- Row 1 -->
+    <path android:pathData="M270,20 m-2.5,0 a2.5,2.5 0 1,0 5,0 a2.5,2.5 0 1,0 -5,0" android:fillColor="#26059669" />
+    <path android:pathData="M290,20 m-3,0 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0" android:fillColor="#26059669" />
+    <path android:pathData="M310,20 m-3.5,0 a3.5,3.5 0 1,0 7,0 a3.5,3.5 0 1,0 -7,0" android:fillColor="#26059669" />
+    <path android:pathData="M330,20 m-4,0 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0" android:fillColor="#26059669" />
+
+    <!-- Row 2 -->
+    <path android:pathData="M270,40 m-2,0 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0" android:fillColor="#26059669" />
+    <path android:pathData="M290,40 m-2.5,0 a2.5,2.5 0 1,0 5,0 a2.5,2.5 0 1,0 -5,0" android:fillColor="#26059669" />
+    <path android:pathData="M310,40 m-3,0 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0" android:fillColor="#26059669" />
+    <path android:pathData="M330,40 m-3.5,0 a3.5,3.5 0 1,0 7,0 a3.5,3.5 0 1,0 -7,0" android:fillColor="#26059669" />
+
+    <!-- Row 3 -->
+    <path android:pathData="M290,60 m-2,0 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0" android:fillColor="#26059669" />
+    <path android:pathData="M310,60 m-2.5,0 a2.5,2.5 0 1,0 5,0 a2.5,2.5 0 1,0 -5,0" android:fillColor="#26059669" />
+    <path android:pathData="M330,60 m-3,0 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0" android:fillColor="#26059669" />
+
+    <!-- Row 4 -->
+    <path android:pathData="M310,80 m-2,0 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0" android:fillColor="#26059669" />
+    <path android:pathData="M330,80 m-2.5,0 a2.5,2.5 0 1,0 5,0 a2.5,2.5 0 1,0 -5,0" android:fillColor="#26059669" />
+
+
+    <!-- Bottom-Left Halftone Dot Cluster -->
+    <!-- Row 1 -->
+    <path android:pathData="M20,560 m-2.5,0 a2.5,2.5 0 1,0 5,0 a2.5,2.5 0 1,0 -5,0" android:fillColor="#26059669" />
+    <path android:pathData="M40,560 m-2,0 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0" android:fillColor="#26059669" />
+
+    <!-- Row 2 -->
+    <path android:pathData="M20,580 m-3,0 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0" android:fillColor="#26059669" />
+    <path android:pathData="M40,580 m-2.5,0 a2.5,2.5 0 1,0 5,0 a2.5,2.5 0 1,0 -5,0" android:fillColor="#26059669" />
+    <path android:pathData="M60,580 m-2,0 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0" android:fillColor="#26059669" />
+
+    <!-- Row 3 -->
+    <path android:pathData="M20,600 m-3.5,0 a3.5,3.5 0 1,0 7,0 a3.5,3.5 0 1,0 -7,0" android:fillColor="#26059669" />
+    <path android:pathData="M40,600 m-3,0 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0" android:fillColor="#26059669" />
+    <path android:pathData="M60,600 m-2.5,0 a2.5,2.5 0 1,0 5,0 a2.5,2.5 0 1,0 -5,0" android:fillColor="#26059669" />
+    <path android:pathData="M80,600 m-2,0 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0" android:fillColor="#26059669" />
+
+    <!-- Row 4 -->
+    <path android:pathData="M20,620 m-4,0 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0" android:fillColor="#26059669" />
+    <path android:pathData="M40,620 m-3.5,0 a3.5,3.5 0 1,0 7,0 a3.5,3.5 0 1,0 -7,0" android:fillColor="#26059669" />
+    <path android:pathData="M60,620 m-3,0 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0" android:fillColor="#26059669" />
+    <path android:pathData="M80,620 m-2.5,0 a2.5,2.5 0 1,0 5,0 a2.5,2.5 0 1,0 -2.5,0" android:fillColor="#26059669" />
+
+
+    <!-- SUBTLE TECH CIRCUIT LINES AT BOTTOM (GREEN) -->
+    <!-- Circuit Line 1 -->
+    <path
+        android:pathData="M20,530 H90 L120,560 H180"
+        android:strokeWidth="1.2"
+        android:strokeColor="#33059669"
+        android:strokeLineCap="round" />
+
+    <path android:pathData="M20,530 m-2.5,0 a2.5,2.5 0 1,0 5,0 a2.5,2.5 0 1,0 -5,0" android:fillColor="#059669" />
+    <path android:pathData="M180,560 m-2.5,0 a2.5,2.5 0 1,0 5,0 a2.5,2.5 0 1,0 -5,0" android:fillColor="#059669" />
+
+    <!-- Circuit Line 2 -->
+    <path
+        android:pathData="M50,550 H110 L135,575 H210"
+        android:strokeWidth="1"
+        android:strokeColor="#26059669"
+        android:strokeLineCap="round" />
+
+    <path android:pathData="M210,575 m-2,0 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0" android:fillColor="#059669" />
+
+    <!-- Circuit Line 3 -->
+    <path
+        android:pathData="M140,590 L160,610 H230"
+        android:strokeWidth="1.2"
+        android:strokeColor="#33059669"
+        android:strokeLineCap="round" />
+
+    <path android:pathData="M140,590 m-2,0 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0" android:fillColor="#059669" />
+    <path android:pathData="M230,610 m-2,0 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0" android:fillColor="#059669" />
+
+</vector>

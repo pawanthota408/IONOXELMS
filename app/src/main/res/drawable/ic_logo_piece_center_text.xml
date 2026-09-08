@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+
+    <!-- CENTER LOGO TEXT: "IONOXE" IN ORIGINAL DARK NAVY AND PURPLE X -->
+    <!-- I -->
+    <path
+        android:pathData="M 38,82 V 110"
+        android:strokeWidth="7"
+        android:strokeColor="#0B192C"
+        android:strokeLineCap="square" />
+
+    <!-- O -->
+    <path
+        android:pathData="M 61,96 m -11,0 a 11,14 0 1,0 22,0 a 11,14 0 1,0 -22,0"
+        android:strokeWidth="6"
+        android:strokeColor="#0B192C" />
+
+    <!-- N -->
+    <path
+        android:pathData="M 80,110 V 82 L 97,110 V 82"
+        android:strokeWidth="6"
+        android:strokeColor="#0B192C"
+        android:strokeLineCap="square"
+        android:strokeLineJoin="miter" />
+
+    <!-- O -->
+    <path
+        android:pathData="M 115,96 m -11,0 a 11,14 0 1,0 22,0 a 11,14 0 1,0 -22,0"
+        android:strokeWidth="6"
+        android:strokeColor="#0B192C" />
+
+    <!-- X (EXACT PURPLE / VIOLET X IN ORIGINAL LOGO) -->
+    <path
+        android:pathData="M 132,82 L 152,110"
+        android:strokeWidth="7"
+        android:strokeColor="#7C3AED"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M 152,82 L 132,110"
+        android:strokeWidth="7"
+        android:strokeColor="#8B5CF6"
+        android:strokeLineCap="round" />
+
+    <!-- E -->
+    <path
+        android:pathData="M 172,82 H 159 V 110 H 172 M 159,96 H 170"
+        android:strokeWidth="6"
+        android:strokeColor="#0B192C"
+        android:strokeLineCap="square"
+        android:strokeLineJoin="miter" />
+
+</vector>
