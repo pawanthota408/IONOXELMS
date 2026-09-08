@@ -26,9 +26,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import com.Ionoxetechlms.ui.login.LoginScreen
 import com.Ionoxetechlms.ui.splash.SplashScreen
 import com.Ionoxetechlms.ui.theme.IONOXELMSTheme
 import com.Ionoxetechlms.ui.theme.ProfessionalGreen
+
+enum class AppScreen {
+    SPLASH,
+    LOGIN,
+    MAIN
+}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,15 +45,23 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             IONOXELMSTheme {
-                var showSplash by remember { mutableStateOf(true) }
+                var currentScreen by remember { mutableStateOf(AppScreen.SPLASH) }
 
-                Crossfade(targetState = showSplash, label = "SplashScreenTransition") { isSplashVisible ->
-                    if (isSplashVisible) {
-                        SplashScreen(
-                            onSplashFinished = { showSplash = false }
-                        )
-                    } else {
-                        MainScreen()
+                Crossfade(targetState = currentScreen, label = "ScreenTransition") { screen ->
+                    when (screen) {
+                        AppScreen.SPLASH -> {
+                            SplashScreen(
+                                onSplashFinished = { currentScreen = AppScreen.LOGIN }
+                            )
+                        }
+                        AppScreen.LOGIN -> {
+                            LoginScreen(
+                                onLoginSuccess = { currentScreen = AppScreen.MAIN }
+                            )
+                        }
+                        AppScreen.MAIN -> {
+                            MainScreen()
+                        }
                     }
                 }
             }
