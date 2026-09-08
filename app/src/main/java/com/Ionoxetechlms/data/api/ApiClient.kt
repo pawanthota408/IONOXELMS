@@ -7,9 +7,8 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 object ApiClient {
-    // Default Base URL for Ionoxe Tech Solutions LMS API
-    // Replace with your server domain (e.g. "https://yourdomain.com/lms/")
-    var BASE_URL: String = "https://yourdomain.com/lms/"
+
+    var BASE_URL: String = "https://ionox.in/lms/"
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY

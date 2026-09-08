@@ -86,35 +86,47 @@ if (empty($email) || empty($password)) {
 $login_success = false;
 $student_data = null;
 
-// Database Check against 'students' table
+// Database Check against 'students' table (supports email or student_id)
 if (isset($conn) && $conn) {
-    $stmt = $conn->prepare("SELECT id, name, email, password FROM students WHERE email=? LIMIT 1");
+    $stmt = $conn->prepare("SELECT id, student_id, name, email, phone, batch_id, ca_id, password FROM students WHERE email=? OR student_id=? LIMIT 1");
     if ($stmt) {
-        $stmt->bind_param("s", $email);
+        $stmt->bind_param("ss", $email, $email);
         $stmt->execute();
         $result = $stmt->get_result();
         $student = $result->fetch_assoc();
         $stmt->close();
 
-        if ($student && password_verify($password, $student['password'])) {
-            $login_success = true;
-            $student_data = [
-                "id" => (int)$student['id'],
-                "name" => $student['name'],
-                "email" => $student['email'],
-                "role" => "student"
-            ];
+        if ($student) {
+            $db_password = $student['password'];
+            // Check password_verify, plain-text, or md5
+            if (password_verify($password, $db_password) || $password === $db_password || md5($password) === $db_password) {
+                $login_success = true;
+                $student_data = [
+                    "id" => (int)$student['id'],
+                    "student_id" => $student['student_id'],
+                    "name" => $student['name'],
+                    "email" => $student['email'],
+                    "phone" => $student['phone'],
+                    "batch_id" => $student['batch_id'],
+                    "ca_id" => $student['ca_id'],
+                    "role" => "student"
+                ];
+            }
         }
     }
 }
 
-// Demo Account Check (for testing)
-if (!$login_success && $email === 'demo@ionox.in' && $password === 'demo') {
+// Demo Account Check
+if (!$login_success && ($email === 'demo@ionox.in' || $email === 'demo') && $password === 'demo') {
     $login_success = true;
     $student_data = [
         "id" => 999,
+        "student_id" => "STU999",
         "name" => "Demo Student",
         "email" => "demo@ionox.in",
+        "phone" => "9603029971",
+        "batch_id" => "B1",
+        "ca_id" => "CA1",
         "role" => "student"
     ];
 }

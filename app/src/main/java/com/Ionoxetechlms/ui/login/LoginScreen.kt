@@ -64,7 +64,7 @@ import kotlinx.coroutines.launch
 
 /**
  * Login Screen for Ionoxetech LMS Application
- * Connected to MySQL Database via REST API (login.php)
+ * Connected to MySQL Database 'students' table via REST API (https://ionox.in/lms/api/login.php)
  */
 @Composable
 fun LoginScreen(
@@ -139,7 +139,7 @@ fun LoginScreen(
                     successMessage = null
                 },
                 label = { Text("Email / Student ID") },
-                placeholder = { Text("you@example.com") },
+                placeholder = { Text("you@example.com or Student ID") },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Email,
@@ -294,24 +294,31 @@ fun LoginScreen(
 
                         coroutineScope.launch {
                             try {
-                                val response = ApiClient.apiService.login(LoginRequest(inputEmail, inputPassword))
+                                var response = ApiClient.apiService.login(LoginRequest(inputEmail, inputPassword))
+                                if (!response.isSuccessful || response.body()?.status != "success") {
+                                    val formResponse = ApiClient.apiService.loginForm(inputEmail, inputPassword)
+                                    if (formResponse.isSuccessful && formResponse.body()?.status == "success") {
+                                        response = formResponse
+                                    }
+                                }
                                 isLoading = false
 
                                 if (response.isSuccessful && response.body()?.status == "success") {
-                                    successMessage = "Welcome ${response.body()?.student?.name ?: ""}!"
+                                    val studentName = response.body()?.student?.name ?: ""
+                                    successMessage = if (studentName.isNotBlank()) "Welcome $studentName!" else "Login Successful!"
                                     onLoginSuccess()
                                 } else {
                                     val serverMsg = response.body()?.message ?: "Invalid email or password."
                                     errorMessage = serverMsg
                                 }
-                            } catch (_: Exception) {
+                            } catch (e: Exception) {
                                 isLoading = false
-                                // Demo Credentials Fallback (if server URL is not yet connected)
-                                if (inputEmail == "demo@ionox.in" && inputPassword == "demo") {
+                                // Demo Credentials Fallback
+                                if ((inputEmail == "demo@ionox.in" || inputEmail == "demo") && inputPassword == "demo") {
                                     successMessage = "Welcome Demo Student!"
                                     onLoginSuccess()
                                 } else {
-                                    errorMessage = "Invalid email or password."
+                                    errorMessage = e.localizedMessage ?: "Invalid email or password."
                                 }
                             }
                         }
