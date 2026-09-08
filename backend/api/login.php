@@ -1,11 +1,9 @@
 <?php
 // ===================================================
 // IONOXE TECH SOLUTIONS - LMS REST API ENDPOINT
-// Path: api/login.php
-// Place this file inside your server's api/ directory.
+// Path: api/login.php  (or /lms/api/login)
 // ===================================================
 
-// CORS & Headers
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: POST, OPTIONS");
@@ -19,129 +17,129 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 define('ACCESS', true);
 session_start();
 
-// Include your main database configuration
+// Include database config
 if (file_exists("../config.php")) {
     require_once "../config.php";
 } elseif (file_exists("config.php")) {
     require_once "config.php";
 }
 
-// Parse input payload (JSON or Form URL-Encoded)
-$input_data = json_decode(file_get_contents("php://input"), true);
+// ---------- Robust Input Parsing ----------
+$raw_input = file_get_contents("php://input");
+$input_data = json_decode($raw_input, true);
 
-$email = "";
-$password = "";
-$reset_email = "";
-
-if (isset($input_data['email'])) {
-    $email = trim($input_data['email']);
-} elseif (isset($_POST['email'])) {
-    $email = trim($_POST['email']);
+if (!is_array($input_data)) {
+    $input_data = [];
 }
 
-if (isset($input_data['password'])) {
-    $password = trim($input_data['password']);
-} elseif (isset($_POST['password'])) {
-    $password = trim($_POST['password']);
-}
+$email       = trim($input_data['email']       ?? $_POST['email']       ?? '');
+$password    = trim($input_data['password']    ?? $_POST['password']    ?? '');
+$reset_email = trim($input_data['reset_email'] ?? $_POST['reset_email'] ?? '');
 
-if (isset($input_data['reset_email'])) {
-    $reset_email = trim($input_data['reset_email']);
-} elseif (isset($_POST['reset_email'])) {
-    $reset_email = trim($_POST['reset_email']);
-}
-
-// ---------------------------------------------------
-// 1. PASSWORD RESET REQUEST
-// ---------------------------------------------------
+// ---------- 1. Password Reset Request ----------
 if (!empty($reset_email)) {
     if (filter_var($reset_email, FILTER_VALIDATE_EMAIL)) {
+        // TODO: Generate token + send email here
         http_response_code(200);
         echo json_encode([
-            "status" => "success",
+            "status"  => "success",
             "message" => "If this email exists, a reset link has been sent."
         ]);
     } else {
         http_response_code(400);
         echo json_encode([
-            "status" => "error",
+            "status"  => "error",
             "message" => "Please enter a valid email address."
         ]);
     }
     exit();
 }
 
-// ---------------------------------------------------
-// 2. STUDENT LOGIN AUTHENTICATION
-// ---------------------------------------------------
+// ---------- 2. Login Validation ----------
 if (empty($email) || empty($password)) {
     http_response_code(400);
     echo json_encode([
-        "status" => "error",
+        "status"  => "error",
         "message" => "Email and password are required."
     ]);
     exit();
 }
 
 $login_success = false;
-$student_data = null;
+$student_data  = null;
 
-// Database Check against 'students' table (supports email or student_id)
+// ---------- Database Login ----------
 if (isset($conn) && $conn) {
-    $stmt = $conn->prepare("SELECT id, student_id, name, email, phone, batch_id, ca_id, password FROM students WHERE email=? OR student_id=? LIMIT 1");
+    $stmt = $conn->prepare("
+        SELECT
+            id,
+            student_id,
+            name,
+            email,
+            password,
+            phone,
+            batch_id,
+            ca_id
+        FROM students
+        WHERE email = ?
+        LIMIT 1
+    ");
+
     if ($stmt) {
-        $stmt->bind_param("ss", $email, $email);
+        $stmt->bind_param("s", $email);
         $stmt->execute();
-        $result = $stmt->get_result();
+        $result  = $stmt->get_result();
         $student = $result->fetch_assoc();
         $stmt->close();
 
-        if ($student) {
-            $db_password = $student['password'];
-            // Check password_verify, plain-text, or md5
-            if (password_verify($password, $db_password) || $password === $db_password || md5($password) === $db_password) {
-                $login_success = true;
-                $student_data = [
-                    "id" => (int)$student['id'],
-                    "student_id" => $student['student_id'],
-                    "name" => $student['name'],
-                    "email" => $student['email'],
-                    "phone" => $student['phone'],
-                    "batch_id" => $student['batch_id'],
-                    "ca_id" => $student['ca_id'],
-                    "role" => "student"
-                ];
-            }
+        if ($student && password_verify($password, $student['password'])) {
+            $login_success = true;
+
+            $student_data = [
+                "id"          => (int)$student['id'],
+                "student_id"  => $student['student_id'],
+                "name"        => $student['name'],
+                "email"       => $student['email'],
+                "phone"       => $student['phone'] ?? null,
+                "batch_id"    => $student['batch_id'] ?? null,
+                "ca_id"       => $student['ca_id'] ?? null,
+                "role"        => "student"
+            ];
         }
     }
 }
 
-// Demo Account Check
-if (!$login_success && ($email === 'demo@ionox.in' || $email === 'demo') && $password === 'demo') {
+// ---------- Demo Account (for testing) ----------
+if (!$login_success && $email === 'demo@ionox.in' && $password === 'demo') {
     $login_success = true;
     $student_data = [
-        "id" => 999,
-        "student_id" => "STU999",
-        "name" => "Demo Student",
-        "email" => "demo@ionox.in",
-        "phone" => "9603029971",
-        "batch_id" => "B1",
-        "ca_id" => "CA1",
-        "role" => "student"
+        "id"         => 999,
+        "student_id" => "DEMO999",
+        "name"       => "Demo Student",
+        "email"      => "demo@ionox.in",
+        "phone"      => null,
+        "batch_id"   => null,
+        "ca_id"      => null,
+        "role"       => "student"
     ];
 }
 
+// ---------- Final Response ----------
 if ($login_success && $student_data !== null) {
+    // Optional: Create session
+    $_SESSION['student_id'] = $student_data['id'];
+    $_SESSION['student']    = $student_data;
+
     http_response_code(200);
     echo json_encode([
-        "status" => "success",
+        "status"  => "success",
         "message" => "Login successful",
         "student" => $student_data
     ]);
 } else {
     http_response_code(401);
     echo json_encode([
-        "status" => "error",
+        "status"  => "error",
         "message" => "Invalid email or password."
     ]);
 }
