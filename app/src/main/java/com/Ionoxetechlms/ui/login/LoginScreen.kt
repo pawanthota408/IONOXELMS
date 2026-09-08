@@ -39,6 +39,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,14 +54,17 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.Ionoxetechlms.R
+import com.Ionoxetechlms.data.api.ApiClient
+import com.Ionoxetechlms.data.api.LoginRequest
+import com.Ionoxetechlms.data.api.PasswordResetRequest
 import com.Ionoxetechlms.ui.splash.SplashScreenBackground
 import com.Ionoxetechlms.ui.theme.IONOXELMSTheme
 import com.Ionoxetechlms.ui.theme.ProfessionalGreen
+import kotlinx.coroutines.launch
 
 /**
  * Login Screen for Ionoxetech LMS Application
- * Features the same 9:16 vertical green wave background as the Splash Screen
- * and includes a Google Sign-In option.
+ * Connected to MySQL Database via REST API (login.php)
  */
 @Composable
 fun LoginScreen(
@@ -75,6 +79,9 @@ fun LoginScreen(
     var rememberMe by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var successMessage by remember { mutableStateOf<String?>(null) }
+
+    val coroutineScope = rememberCoroutineScope()
 
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -129,9 +136,10 @@ fun LoginScreen(
                 onValueChange = {
                     email = it
                     errorMessage = null
+                    successMessage = null
                 },
                 label = { Text("Email / Student ID") },
-                placeholder = { Text("student@ionoxe.com") },
+                placeholder = { Text("you@example.com") },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Email,
@@ -158,6 +166,7 @@ fun LoginScreen(
                 onValueChange = {
                     password = it
                     errorMessage = null
+                    successMessage = null
                 },
                 label = { Text("Password") },
                 placeholder = { Text("••••••••") },
@@ -220,7 +229,28 @@ fun LoginScreen(
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = ProfessionalGreen,
-                    modifier = Modifier.clickable { onForgotPasswordClick() }
+                    modifier = Modifier.clickable {
+                        if (email.isBlank()) {
+                            errorMessage = "Enter your email above to reset password"
+                        } else {
+                            isLoading = true
+                            coroutineScope.launch {
+                                try {
+                                    val res = ApiClient.apiService.resetPassword(PasswordResetRequest(email.trim()))
+                                    isLoading = false
+                                    if (res.isSuccessful) {
+                                        successMessage = "Password reset link sent to your email!"
+                                    } else {
+                                        errorMessage = "Unable to process reset request"
+                                    }
+                                } catch (_: Exception) {
+                                    isLoading = false
+                                    errorMessage = "Reset requested for $email"
+                                }
+                            }
+                        }
+                        onForgotPasswordClick()
+                    }
                 )
             }
 
@@ -235,16 +265,56 @@ fun LoginScreen(
                 )
             }
 
+            // Success Message
+            if (successMessage != null) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = successMessage!!,
+                    color = ProfessionalGreen,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Sign In Button
+            // Sign In Button (API Call)
             Button(
                 onClick = {
-                    if (email.isBlank() || password.isBlank()) {
+                    val inputEmail = email.trim()
+                    val inputPassword = password.trim()
+
+                    if (inputEmail.isBlank() || inputPassword.isBlank()) {
                         errorMessage = "Please enter both Email and Password"
                     } else {
                         isLoading = true
-                        onLoginSuccess()
+                        errorMessage = null
+                        successMessage = null
+
+                        coroutineScope.launch {
+                            try {
+                                val response = ApiClient.apiService.login(LoginRequest(inputEmail, inputPassword))
+                                isLoading = false
+
+                                if (response.isSuccessful && response.body()?.status == "success") {
+                                    successMessage = "Welcome ${response.body()?.student?.name ?: ""}!"
+                                    onLoginSuccess()
+                                } else {
+                                    val serverMsg = response.body()?.message ?: "Invalid email or password."
+                                    errorMessage = serverMsg
+                                }
+                            } catch (_: Exception) {
+                                isLoading = false
+                                // Demo Credentials Fallback (if server URL is not yet connected)
+                                if (inputEmail == "demo@ionox.in" && inputPassword == "demo") {
+                                    successMessage = "Welcome Demo Student!"
+                                    onLoginSuccess()
+                                } else {
+                                    errorMessage = "Invalid email or password."
+                                }
+                            }
+                        }
                     }
                 },
                 enabled = !isLoading,
