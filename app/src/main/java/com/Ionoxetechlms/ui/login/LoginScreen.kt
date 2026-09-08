@@ -60,6 +60,8 @@ import com.Ionoxetechlms.data.api.PasswordResetRequest
 import com.Ionoxetechlms.ui.splash.SplashScreenBackground
 import com.Ionoxetechlms.ui.theme.IONOXELMSTheme
 import com.Ionoxetechlms.ui.theme.ProfessionalGreen
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import kotlinx.coroutines.launch
 
 /**
@@ -308,8 +310,20 @@ fun LoginScreen(
                                     successMessage = if (studentName.isNotBlank()) "Welcome $studentName!" else "Login Successful!"
                                     onLoginSuccess()
                                 } else {
-                                    val serverMsg = response.body()?.message ?: "Invalid email or password."
-                                    errorMessage = serverMsg
+                                    val errorBody = response.errorBody()?.string()
+                                    var parsedMsg: String? = null
+                                    if (!errorBody.isNullOrEmpty()) {
+                                        try {
+                                            val jsonElement = JsonParser().parse(errorBody)
+                                            if (jsonElement.isJsonObject) {
+                                                val errObj: JsonObject = jsonElement.asJsonObject
+                                                if (errObj.has("message")) {
+                                                    parsedMsg = errObj.get("message").asString
+                                                }
+                                            }
+                                        } catch (_: Exception) {}
+                                    }
+                                    errorMessage = parsedMsg ?: response.body()?.message ?: "Invalid email or password."
                                 }
                             } catch (e: Exception) {
                                 isLoading = false
