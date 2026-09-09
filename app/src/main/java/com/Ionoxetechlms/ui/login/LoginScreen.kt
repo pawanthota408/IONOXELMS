@@ -295,12 +295,13 @@ fun LoginScreen(
 
                         coroutineScope.launch {
                             try {
-                                var response = ApiClient.apiService.login(LoginRequest(inputEmail, inputPassword))
+                                // Primary Form URL-Encoded Post (matches Postman form-data / x-www-form-urlencoded)
+                                var response = ApiClient.apiService.loginForm(inputEmail, inputPassword)
                                 if (!response.isSuccessful || response.body()?.status != "success") {
                                     try {
-                                        val formRes = ApiClient.apiService.loginForm(inputEmail, inputPassword)
-                                        if (formRes.isSuccessful && formRes.body()?.status == "success") {
-                                            response = formRes
+                                        val jsonRes = ApiClient.apiService.login(LoginRequest(inputEmail, inputPassword))
+                                        if (jsonRes.isSuccessful && jsonRes.body()?.status == "success") {
+                                            response = jsonRes
                                         }
                                     } catch (_: Exception) {}
                                 }

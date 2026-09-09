@@ -2,7 +2,7 @@ package com.Ionoxetechlms.data.api
 
 import com.google.gson.annotations.SerializedName
 
-/**
+ /**
  * Login Request Payload
  */
 data class LoginRequest(
