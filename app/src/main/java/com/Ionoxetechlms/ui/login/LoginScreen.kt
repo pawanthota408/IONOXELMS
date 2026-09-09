@@ -56,7 +56,6 @@ import androidx.compose.ui.unit.sp
 import com.Ionoxetechlms.R
 import com.Ionoxetechlms.data.api.ApiClient
 import com.Ionoxetechlms.data.api.LoginRequest
-import com.Ionoxetechlms.data.api.PasswordResetRequest
 import com.Ionoxetechlms.ui.splash.SplashScreenBackground
 import com.Ionoxetechlms.ui.theme.IONOXELMSTheme
 import com.Ionoxetechlms.ui.theme.ProfessionalGreen
@@ -238,7 +237,7 @@ fun LoginScreen(
                             isLoading = true
                             coroutineScope.launch {
                                 try {
-                                    val res = ApiClient.apiService.resetPassword(PasswordResetRequest(email.trim()))
+                                    val res = ApiClient.apiService.resetPasswordForm(email.trim())
                                     isLoading = false
                                     if (res.isSuccessful) {
                                         successMessage = "Password reset link sent to your email!"
@@ -296,12 +295,15 @@ fun LoginScreen(
 
                         coroutineScope.launch {
                             try {
-                                var response = ApiClient.apiService.login(LoginRequest(inputEmail, inputPassword))
+                                // Primary Form URL-Encoded Post (Populates $_POST in PHP 100% reliably)
+                                var response = ApiClient.apiService.loginForm(inputEmail, inputPassword)
                                 if (!response.isSuccessful || response.body()?.status != "success") {
-                                    val formResponse = ApiClient.apiService.loginForm(inputEmail, inputPassword)
-                                    if (formResponse.isSuccessful && formResponse.body()?.status == "success") {
-                                        response = formResponse
-                                    }
+                                    try {
+                                        val jsonRes = ApiClient.apiService.login(LoginRequest(inputEmail, inputPassword))
+                                        if (jsonRes.isSuccessful && jsonRes.body()?.status == "success") {
+                                            response = jsonRes
+                                        }
+                                    } catch (_: Exception) {}
                                 }
                                 isLoading = false
 
@@ -324,7 +326,7 @@ fun LoginScreen(
                                             }
                                         } catch (_: Exception) {}
                                     }
-                                    errorMessage = parsedMsg ?: response.body()?.message ?: "Invalid email or password."
+                                    errorMessage = parsedMsg ?: response.body()?.message ?: "Invalid email/Student ID or password."
                                 }
                             } catch (e: Exception) {
                                 isLoading = false
