@@ -10,8 +10,7 @@ import java.util.concurrent.TimeUnit
 
 object ApiClient {
 
-    // Correct Base URL for Ionoxe LMS
-    var BASE_URL: String = "https://ionox.in/lms/"
+    private const val BASE_URL = "https://ionox.in/lms/"
 
     private val gson: Gson = GsonBuilder()
         .setLenient()
@@ -28,22 +27,13 @@ object ApiClient {
         .writeTimeout(20, TimeUnit.SECONDS)
         .build()
 
-    var retrofit: Retrofit = Retrofit.Builder()
+    private val retrofit: Retrofit = Retrofit.Builder()
         .baseUrl(BASE_URL)
         .client(okHttpClient)
         .addConverterFactory(GsonConverterFactory.create(gson))
         .build()
 
-    val apiService: LmsApiService
-        get() = retrofit.create(LmsApiService::class.java)
-
-    fun setBaseUrl(newUrl: String) {
-        val formattedUrl = if (newUrl.endsWith("/")) newUrl else "$newUrl/"
-        BASE_URL = formattedUrl
-        retrofit = Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create(gson))
-            .build()
+    val apiService: LmsApiService by lazy {
+        retrofit.create(LmsApiService::class.java)
     }
 }

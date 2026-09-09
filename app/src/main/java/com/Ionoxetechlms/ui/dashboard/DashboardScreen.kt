@@ -258,7 +258,7 @@ fun DashboardContent(
                     // 3. NEXT CLASS BANNER (if available)
                     if (dashboardData.nextClass != null) {
                         NextClassBanner(
-                            nextClass = dashboardData.nextClass!!,
+                            nextClass = dashboardData.nextClass,
                             onJoinClick = onJoinMeetingClick
                         )
                     }

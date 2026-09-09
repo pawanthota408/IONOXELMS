@@ -10,7 +10,7 @@ import retrofit2.http.Query
 
 interface LmsApiService {
 
-    // Primary Form-urlencoded Login (Populates $_POST in PHP 100% reliably)
+    // Primary Form URL-Encoded Login
     @FormUrlEncoded
     @POST("api/login.php")
     suspend fun loginForm(
@@ -24,13 +24,14 @@ interface LmsApiService {
         @Body request: LoginRequest
     ): Response<LoginResponse>
 
-    // Password Reset
+    // Password Reset (Form)
     @FormUrlEncoded
     @POST("api/login.php")
     suspend fun resetPasswordForm(
         @Field("reset_email") resetEmail: String
     ): Response<PasswordResetResponse>
 
+    // Password Reset (JSON)
     @POST("api/login.php")
     suspend fun resetPassword(
         @Body request: PasswordResetRequest

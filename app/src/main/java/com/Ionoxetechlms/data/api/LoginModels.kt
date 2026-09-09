@@ -19,8 +19,8 @@ data class Student(
     @SerializedName("name") val name: String? = null,
     @SerializedName("email") val email: String? = null,
     @SerializedName("phone") val phone: String? = null,
-    @SerializedName("batch_id") val batchId: String? = null,
-    @SerializedName("ca_id") val caId: String? = null,
+    @SerializedName("batch_id") val batchId: Int? = null,      // Changed to Int?
+    @SerializedName("ca_id") val caId: Int? = null,            // Changed to Int?
     @SerializedName("role") val role: String? = "student"
 )
 
