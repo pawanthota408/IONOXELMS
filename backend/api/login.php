@@ -2,7 +2,7 @@
 // ===================================================
 // IONOXE TECH SOLUTIONS - LMS REST API ENDPOINT
 // Path: api/login.php  (or /lms/api/login)
-// Fully synced with website & handles all password hash types
+// Fully synced with website & handles all input sources & hash types
 // ===================================================
 
 header("Access-Control-Allow-Origin: *");
@@ -35,7 +35,7 @@ if (isset($conn)) {
     $conn_handle = $mysqli;
 }
 
-// PHPMailer (same as website)
+// PHPMailer
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
@@ -45,7 +45,7 @@ if (file_exists(__DIR__ . '/../phpmailer/src/Exception.php')) {
     require_once __DIR__ . '/../phpmailer/src/SMTP.php';
 }
 
-// ---------- Robust Input Parsing (JSON + Form) ----------
+// ---------- Robust Multi-Source Input Parsing (JSON + POST + REQUEST) ----------
 $raw_input  = file_get_contents("php://input");
 $input_data = json_decode($raw_input, true);
 
@@ -53,9 +53,22 @@ if (!is_array($input_data)) {
     $input_data = [];
 }
 
-$email       = trim($input_data['email']       ?? $_POST['email']       ?? '');
-$password    = trim($input_data['password']    ?? $_POST['password']    ?? '');
-$reset_email = trim($input_data['reset_email'] ?? $_POST['reset_email'] ?? '');
+function get_input_field($key, $json_data) {
+    if (!empty($json_data[$key]) && is_string($json_data[$key])) {
+        return trim($json_data[$key]);
+    }
+    if (!empty($_POST[$key]) && is_string($_POST[$key])) {
+        return trim($_POST[$key]);
+    }
+    if (!empty($_REQUEST[$key]) && is_string($_REQUEST[$key])) {
+        return trim($_REQUEST[$key]);
+    }
+    return '';
+}
+
+$email       = get_input_field('email', $input_data);
+$password    = get_input_field('password', $input_data);
+$reset_email = get_input_field('reset_email', $input_data);
 
 // ===================================================
 // 1. PASSWORD RESET REQUEST
