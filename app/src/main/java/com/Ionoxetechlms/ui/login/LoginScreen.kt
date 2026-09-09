@@ -314,6 +314,7 @@ fun LoginScreen(
                                     var parsedMsg: String? = null
                                     if (!errorBody.isNullOrEmpty()) {
                                         try {
+                                            @Suppress("DEPRECATION")
                                             val jsonElement = JsonParser().parse(errorBody)
                                             if (jsonElement.isJsonObject) {
                                                 val errObj: JsonObject = jsonElement.asJsonObject
@@ -332,7 +333,12 @@ fun LoginScreen(
                                     successMessage = "Welcome Demo Student!"
                                     onLoginSuccess()
                                 } else {
-                                    errorMessage = e.localizedMessage ?: "Invalid email or password."
+                                    val msg = e.localizedMessage ?: ""
+                                    errorMessage = if (msg.contains("JsonReader") || msg.contains("malformed")) {
+                                        "Invalid email/Student ID or password."
+                                    } else {
+                                        "Unable to connect to server. Please check your internet connection."
+                                    }
                                 }
                             }
                         }
