@@ -1,7 +1,5 @@
 package com.Ionoxetechlms.data.api
 
-import com.google.gson.Gson
-import com.google.gson.GsonBuilder
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -10,11 +8,7 @@ import java.util.concurrent.TimeUnit
 
 object ApiClient {
 
-    private const val BASE_URL = "https://ionox.in/lms/"
-
-    private val gson: Gson = GsonBuilder()
-        .setLenient()
-        .create()
+    private const val BASE_URL = "https://ionox.in/lms/api/"
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
@@ -30,7 +24,7 @@ object ApiClient {
     private val retrofit: Retrofit = Retrofit.Builder()
         .baseUrl(BASE_URL)
         .client(okHttpClient)
-        .addConverterFactory(GsonConverterFactory.create(gson))
+        .addConverterFactory(GsonConverterFactory.create())
         .build()
 
     val apiService: LmsApiService by lazy {

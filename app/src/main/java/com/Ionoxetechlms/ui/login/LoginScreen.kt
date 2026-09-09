@@ -69,7 +69,7 @@ import kotlinx.coroutines.launch
  */
 @Composable
 fun LoginScreen(
-    onLoginSuccess: () -> Unit = {},
+    onLoginSuccess: (Int, String) -> Unit = { _, _ -> },
     onGoogleLoginClick: () -> Unit = {},
     onForgotPasswordClick: () -> Unit = {},
     onContactAdminClick: () -> Unit = {}
@@ -295,22 +295,24 @@ fun LoginScreen(
 
                         coroutineScope.launch {
                             try {
-                                // Primary Form URL-Encoded Post (Populates $_POST in PHP 100% reliably)
-                                var response = ApiClient.apiService.loginForm(inputEmail, inputPassword)
+                                var response = ApiClient.apiService.login(LoginRequest(inputEmail, inputPassword))
                                 if (!response.isSuccessful || response.body()?.status != "success") {
                                     try {
-                                        val jsonRes = ApiClient.apiService.login(LoginRequest(inputEmail, inputPassword))
-                                        if (jsonRes.isSuccessful && jsonRes.body()?.status == "success") {
-                                            response = jsonRes
+                                        val formRes = ApiClient.apiService.loginForm(inputEmail, inputPassword)
+                                        if (formRes.isSuccessful && formRes.body()?.status == "success") {
+                                            response = formRes
                                         }
                                     } catch (_: Exception) {}
                                 }
                                 isLoading = false
 
                                 if (response.isSuccessful && response.body()?.status == "success") {
-                                    val studentName = response.body()?.student?.name ?: ""
-                                    successMessage = if (studentName.isNotBlank()) "Welcome $studentName!" else "Login Successful!"
-                                    onLoginSuccess()
+                                    val studentObj = response.body()?.student
+                                    val studentId = studentObj?.id ?: 999
+                                    val studentName = studentObj?.name ?: "Student"
+
+                                    successMessage = "Welcome $studentName!"
+                                    onLoginSuccess(studentId, studentName)
                                 } else {
                                     val errorBody = response.errorBody()?.string()
                                     var parsedMsg: String? = null
@@ -333,7 +335,7 @@ fun LoginScreen(
                                 // Demo Credentials Fallback
                                 if ((inputEmail == "demo@ionox.in" || inputEmail == "demo") && inputPassword == "demo") {
                                     successMessage = "Welcome Demo Student!"
-                                    onLoginSuccess()
+                                    onLoginSuccess(999, "Demo Student")
                                 } else {
                                     val msg = e.localizedMessage ?: ""
                                     errorMessage = if (msg.contains("JsonReader") || msg.contains("malformed")) {
