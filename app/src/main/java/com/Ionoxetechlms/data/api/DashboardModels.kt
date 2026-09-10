@@ -82,10 +82,12 @@ data class AssignmentItem(
     @SerializedName("course_name") val courseName: String? = null,
     @SerializedName("description") val description: String? = null,
     @SerializedName("due_date") val dueDate: String? = null,
+    @SerializedName("scheduled_at") val scheduledAt: String? = null,
     @SerializedName("total_marks") val totalMarks: Int = 100,
     @SerializedName("obtained_marks") val obtainedMarks: Int? = null,
     @SerializedName("submitted_at") val submittedAt: String? = null,
     @SerializedName("file_path") val filePath: String? = null,
+    @SerializedName("resolved_type") val resolvedType: String = "mcq",
     @SerializedName("state") val state: String = "open"
 )
 

@@ -4,7 +4,6 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,19 +20,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.Assignment
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.ListAlt
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -49,7 +40,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -71,6 +61,8 @@ val OrangeBg = Color(0xFFFFF7ED)
 val OrangeBorder = Color(0x33F97316)
 val NavyDark = Color(0xFF1A1F2E)
 val LightMuted = Color(0xFF7A8BA5)
+val PurpleAccent = Color(0xFF7C3AED)
+val PurpleBg = Color(0xFFF5F3FF)
 
 /**
  * Assignments & Tasks Screen for Ionoxetech LMS Application
@@ -106,6 +98,7 @@ fun AssignmentsScreen(
                         description = "Implement Linear and Polynomial Regression algorithms using Python and NumPy.",
                         dueDate = "10 May 2026",
                         totalMarks = 100,
+                        resolvedType = "mcq",
                         state = "open"
                     ),
                     AssignmentItem(
@@ -118,6 +111,7 @@ fun AssignmentsScreen(
                         obtainedMarks = 92,
                         submittedAt = "19 Apr 2026",
                         filePath = "https://ionox.in/uploads/assignments/mern_app.pdf",
+                        resolvedType = "project",
                         state = "submitted"
                     )
                 )
@@ -128,6 +122,11 @@ fun AssignmentsScreen(
     }
 
     val list = assignmentsData?.assignments ?: emptyList()
+    val mcqList = list.filter { it.resolvedType.lowercase() == "mcq" }
+    val projList = list.filter { it.resolvedType.lowercase() == "project" || it.resolvedType.lowercase() == "descriptive" }
+
+    val activeList = if (selectedTab == 0) mcqList else projList
+
     val submittedCount = list.count { it.state.lowercase() == "submitted" }
     val openCount = list.count { it.state.lowercase() == "open" }
     val overdueCount = list.count { it.state.lowercase() == "overdue" }
@@ -157,7 +156,7 @@ fun AssignmentsScreen(
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = "Assignments & Tasks",
+                        text = "Assignments & Projects",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = NavyDark
@@ -195,10 +194,39 @@ fun AssignmentsScreen(
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "Sorted newest first • Gated schedule • Auto-expires on due date",
+                                    text = "Sorted newest first • Schedule-gated • Auto-expires after due date",
                                     fontSize = 12.sp,
                                     color = LightMuted
                                 )
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Surface(
+                                        shape = RoundedCornerShape(100.dp),
+                                        color = OrangeBg,
+                                        border = BorderStroke(1.dp, OrangeBorder)
+                                    ) {
+                                        Text(
+                                            text = "${mcqList.size} MCQ(s)",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = BrandOrange,
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                        )
+                                    }
+                                    Surface(
+                                        shape = RoundedCornerShape(100.dp),
+                                        color = PurpleBg,
+                                        border = BorderStroke(1.dp, Color(0x337C3AED))
+                                    ) {
+                                        Text(
+                                            text = "${projList.size} Descriptive(s)",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = PurpleAccent,
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -209,10 +237,10 @@ fun AssignmentsScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            TaskStatCard(modifier = Modifier.weight(1f), title = "Total", value = "${list.size}", color = BrandOrange, bgColor = OrangeBg)
-                            TaskStatCard(modifier = Modifier.weight(1f), title = "Submitted", value = "$submittedCount", color = ProfessionalGreen, bgColor = LightGreenSoft)
-                            TaskStatCard(modifier = Modifier.weight(1f), title = "Live Now", value = "$openCount", color = Color(0xFF0891B2), bgColor = Color(0xFFF0F9FF))
-                            TaskStatCard(modifier = Modifier.weight(1f), title = "Expired", value = "$overdueCount", color = Color(0xFFDC2626), bgColor = Color(0xFFFEF2F2))
+                            TaskStatCard(modifier = Modifier.weight(1f), title = "Total", value = "${list.size}", color = BrandOrange)
+                            TaskStatCard(modifier = Modifier.weight(1f), title = "Submitted", value = "$submittedCount", color = ProfessionalGreen)
+                            TaskStatCard(modifier = Modifier.weight(1f), title = "Live Now", value = "$openCount", color = Color(0xFF0891B2))
+                            TaskStatCard(modifier = Modifier.weight(1f), title = "Expired", value = "$overdueCount", color = Color(0xFFDC2626))
                         }
                     }
 
@@ -232,18 +260,18 @@ fun AssignmentsScreen(
                             Tab(
                                 selected = selectedTab == 0,
                                 onClick = { selectedTab = 0 },
-                                text = { Text("MCQ Assignments", fontWeight = FontWeight.Bold) }
+                                text = { Text("MCQ (${mcqList.size})", fontWeight = FontWeight.Bold) }
                             )
                             Tab(
                                 selected = selectedTab == 1,
                                 onClick = { selectedTab = 1 },
-                                text = { Text("Descriptive Projects", fontWeight = FontWeight.Bold) }
+                                text = { Text("Descriptive (${projList.size})", fontWeight = FontWeight.Bold) }
                             )
                         }
                     }
 
                     // Assignment List
-                    if (list.isEmpty()) {
+                    if (activeList.isEmpty()) {
                         item {
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
@@ -251,15 +279,16 @@ fun AssignmentsScreen(
                                 colors = CardDefaults.cardColors(containerColor = Color.White)
                             ) {
                                 Text(
-                                    text = "No assignments available yet.",
-                                    fontSize = 13.sp,
-                                    color = LightMuted,
+                                    text = if (selectedTab == 0) "No MCQ Assignments Yet" else "No Descriptive Projects Yet",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = NavyDark,
                                     modifier = Modifier.padding(24.dp)
                                 )
                             }
                         }
                     } else {
-                        items(list) { assignment ->
+                        items(activeList) { assignment ->
                             AssignmentCard(
                                 item = assignment,
                                 onClick = {
@@ -284,8 +313,7 @@ fun TaskStatCard(
     modifier: Modifier = Modifier,
     title: String,
     value: String,
-    color: Color,
-    bgColor: Color
+    color: Color
 ) {
     Card(
         modifier = modifier,
@@ -320,6 +348,8 @@ fun AssignmentCard(
     val state = item.state.lowercase()
     val isSubmitted = state == "submitted"
     val isExpired = state == "overdue"
+    val isLocked = state == "locked"
+    val isProject = item.resolvedType.lowercase() == "project" || item.resolvedType.lowercase() == "descriptive"
 
     Card(
         modifier = Modifier
@@ -340,14 +370,14 @@ fun AssignmentCard(
             ) {
                 Surface(
                     shape = RoundedCornerShape(100.dp),
-                    color = OrangeBg,
-                    border = BorderStroke(1.dp, OrangeBorder)
+                    color = if (isProject) PurpleBg else OrangeBg,
+                    border = BorderStroke(1.dp, if (isProject) Color(0x337C3AED) else OrangeBorder)
                 ) {
                     Text(
                         text = item.courseName ?: "Course",
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
-                        color = BrandOrange,
+                        color = if (isProject) PurpleAccent else BrandOrange,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -359,11 +389,13 @@ fun AssignmentCard(
                     color = when (state) {
                         "submitted" -> LightGreenSoft
                         "overdue" -> Color(0xFFFEF2F2)
+                        "locked" -> Color(0xFFF8F9FC)
                         else -> OrangeBg
                     },
                     border = BorderStroke(1.dp, when (state) {
                         "submitted" -> Color(0x3316A34A)
                         "overdue" -> Color(0x33DC2626)
+                        "locked" -> Color(0xFFE8ECF4)
                         else -> OrangeBorder
                     })
                 ) {
@@ -371,6 +403,7 @@ fun AssignmentCard(
                         text = when (state) {
                             "submitted" -> "SUBMITTED"
                             "overdue" -> "EXPIRED"
+                            "locked" -> "LOCKED"
                             else -> "LIVE NOW"
                         },
                         fontSize = 9.sp,
@@ -378,6 +411,7 @@ fun AssignmentCard(
                         color = when (state) {
                             "submitted" -> ProfessionalGreen
                             "overdue" -> Color(0xFFDC2626)
+                            "locked" -> LightMuted
                             else -> BrandOrange
                         },
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
@@ -397,8 +431,17 @@ fun AssignmentCard(
 
             Spacer(modifier = Modifier.height(4.dp))
 
+            // Type Indicator
+            Text(
+                text = if (isProject) "Descriptive • Write answer or upload file" else "MCQ • Multiple Choice Questions",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = if (isProject) PurpleAccent else BrandOrange
+            )
+
             // Description
             if (!item.description.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = item.description,
                     fontSize = 12.sp,
@@ -407,8 +450,9 @@ fun AssignmentCard(
                     overflow = TextOverflow.Ellipsis,
                     lineHeight = 16.sp
                 )
-                Spacer(modifier = Modifier.height(8.dp))
             }
+
+            Spacer(modifier = Modifier.height(10.dp))
 
             // Due Date & Total Marks
             Row(
@@ -436,10 +480,13 @@ fun AssignmentCard(
             // Footer Button
             Button(
                 onClick = { onClick() },
+                enabled = !isLocked,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = when {
                         isSubmitted -> ProfessionalGreen
                         isExpired -> Color(0xFF475569)
+                        isLocked -> Color(0xFF94A3B8)
+                        isProject -> PurpleAccent
                         else -> BrandOrange
                     }
                 ),
@@ -450,6 +497,8 @@ fun AssignmentCard(
                     text = when {
                         isSubmitted -> "View Result"
                         isExpired -> "View Assignment"
+                        isLocked -> "Locked"
+                        isProject -> "Submit Project"
                         else -> "Attempt Now"
                     },
                     fontWeight = FontWeight.Bold,
