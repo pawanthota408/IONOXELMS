@@ -10,35 +10,31 @@ import retrofit2.http.Query
 
 interface LmsApiService {
 
-    // Primary Form URL-Encoded Login (Populates $_POST in PHP 100% reliably)
+    // Clean URL endpoints without .php to avoid Hostinger hPanel 301 redirects
     @FormUrlEncoded
-    @POST("api/login.php")
+    @POST("api/login")
     suspend fun loginForm(
         @Field("email") email: String,
         @Field("password") password: String
     ): Response<LoginResponse>
 
-    // JSON Body Login
-    @POST("api/login.php")
+    @POST("api/login")
     suspend fun login(
         @Body request: LoginRequest
     ): Response<LoginResponse>
 
-    // Password Reset (Form)
     @FormUrlEncoded
-    @POST("api/login.php")
+    @POST("api/login")
     suspend fun resetPasswordForm(
         @Field("reset_email") resetEmail: String
     ): Response<PasswordResetResponse>
 
-    // Password Reset (JSON)
-    @POST("api/login.php")
+    @POST("api/login")
     suspend fun resetPassword(
         @Body request: PasswordResetRequest
     ): Response<PasswordResetResponse>
 
-    // Student Dashboard Data API
-    @GET("api/dashboard.php")
+    @GET("api/dashboard")
     suspend fun getDashboard(
         @Query("student_id") studentId: Int
     ): Response<DashboardResponse>
