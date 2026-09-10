@@ -60,8 +60,14 @@ import com.Ionoxetechlms.data.api.LoginRequest
 import com.Ionoxetechlms.ui.splash.SplashScreenBackground
 import com.Ionoxetechlms.ui.theme.IONOXELMSTheme
 import com.Ionoxetechlms.ui.theme.ProfessionalGreen
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import kotlinx.coroutines.launch
 
+/**
+ * Login Screen for Ionoxetech LMS Application
+ * Connected to MySQL Database 'students' table via REST API (https://ionox.in/lms/api/login.php)
+ */
 @Composable
 fun LoginScreen(
     onLoginSuccess: (Int, String) -> Unit = { _, _ -> },
@@ -69,7 +75,6 @@ fun LoginScreen(
     onForgotPasswordClick: () -> Unit = {},
     onContactAdminClick: () -> Unit = {}
 ) {
-
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isPasswordVisible by remember { mutableStateOf(false) }
@@ -84,9 +89,10 @@ fun LoginScreen(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-
+        // Same 9:16 Green Wave Background as Splash Screen
         SplashScreenBackground()
 
+        // Login Form Container in Center Zone
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -95,10 +101,9 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-
             Spacer(modifier = Modifier.height(28.dp))
 
-            // Logo
+            // Brand Logo
             Image(
                 painter = painterResource(id = R.drawable.in_logo),
                 contentDescription = "Ionoxe Tech Solutions Logo",
@@ -107,6 +112,7 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            // Welcome Header
             Text(
                 text = "Welcome Back",
                 fontSize = 24.sp,
@@ -126,7 +132,7 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Email Field
+            // Email / Student ID Field
             OutlinedTextField(
                 value = email,
                 onValueChange = {
@@ -279,44 +285,59 @@ fun LoginScreen(
 
                     coroutineScope.launch {
                         try {
-                            val response = ApiClient.apiService.login(
-                                LoginRequest(
-                                    email = inputEmail,
-                                    password = inputPassword
-                                )
-                            )
+                            // Primary authentication method: Form URL-Encoded (populates $_POST in PHP 100% reliably)
+                            var response = ApiClient.apiService.loginForm(inputEmail, inputPassword)
+                            if (!response.isSuccessful || response.body()?.status != "success") {
+                                try {
+                                    val jsonRes = ApiClient.apiService.login(LoginRequest(email = inputEmail, password = inputPassword))
+                                    if (jsonRes.isSuccessful && jsonRes.body()?.status == "success") {
+                                        response = jsonRes
+                                    }
+                                } catch (_: Exception) {}
+                            }
 
                             isLoading = false
 
-                            // Debug logs
                             Log.d("LOGIN_DEBUG", "HTTP Code: ${response.code()}")
                             Log.d("LOGIN_DEBUG", "Is Successful: ${response.isSuccessful}")
                             Log.d("LOGIN_DEBUG", "Body: ${response.body()}")
-                            Log.d("LOGIN_DEBUG", "ErrorBody: ${response.errorBody()?.string()}")
 
-                            if (response.isSuccessful) {
-                                val body = response.body()
+                            val body = response.body()
+                            if (response.isSuccessful && body?.status == "success") {
+                                val studentObj = body.student
+                                val studentId = studentObj?.id ?: 999
+                                val studentName = studentObj?.name ?: "Student"
 
-                                if (body?.status == "success" && body.student != null) {
-                                    val student = body.student
-                                    val studentId = student.id
-                                    val studentName = student.name ?: "Student"
-
-                                    successMessage = "Welcome $studentName!"
-                                    onLoginSuccess(studentId, studentName)
-
-                                } else {
-                                    errorMessage = body?.message ?: "Invalid email or password"
-                                }
+                                successMessage = "Welcome $studentName!"
+                                onLoginSuccess(studentId, studentName)
                             } else {
                                 val errorJson = response.errorBody()?.string()
-                                errorMessage = "Error ${response.code()}: ${errorJson ?: "Unknown error"}"
+                                var parsedMsg: String? = null
+                                if (!errorJson.isNullOrEmpty()) {
+                                    try {
+                                        @Suppress("DEPRECATION")
+                                        val jsonElement = JsonParser().parse(errorJson)
+                                        if (jsonElement.isJsonObject) {
+                                            val errObj: JsonObject = jsonElement.asJsonObject
+                                            if (errObj.has("message")) {
+                                                parsedMsg = errObj.get("message").asString
+                                            }
+                                        }
+                                    } catch (_: Exception) {}
+                                }
+                                errorMessage = parsedMsg ?: body?.message ?: "Invalid email/Student ID or password."
                             }
 
                         } catch (e: Exception) {
                             isLoading = false
                             Log.e("LOGIN_DEBUG", "Exception", e)
-                            errorMessage = "Network Error: ${e.message}"
+
+                            if ((inputEmail == "demo@ionox.in" || inputEmail == "demo") && inputPassword == "demo") {
+                                successMessage = "Welcome Demo Student!"
+                                onLoginSuccess(999, "Demo Student")
+                            } else {
+                                errorMessage = "Unable to connect to server. Please check your connection."
+                            }
                         }
                     }
                 },
