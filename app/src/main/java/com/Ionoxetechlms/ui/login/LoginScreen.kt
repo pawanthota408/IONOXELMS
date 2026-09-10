@@ -1,5 +1,6 @@
 package com.Ionoxetechlms.ui.login
 
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -59,14 +60,8 @@ import com.Ionoxetechlms.data.api.LoginRequest
 import com.Ionoxetechlms.ui.splash.SplashScreenBackground
 import com.Ionoxetechlms.ui.theme.IONOXELMSTheme
 import com.Ionoxetechlms.ui.theme.ProfessionalGreen
-import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 import kotlinx.coroutines.launch
 
-/**
- * Login Screen for Ionoxetech LMS Application
- * Connected to MySQL Database 'students' table via REST API (https://ionox.in/lms/api/login.php)
- */
 @Composable
 fun LoginScreen(
     onLoginSuccess: (Int, String) -> Unit = { _, _ -> },
@@ -74,6 +69,7 @@ fun LoginScreen(
     onForgotPasswordClick: () -> Unit = {},
     onContactAdminClick: () -> Unit = {}
 ) {
+
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isPasswordVisible by remember { mutableStateOf(false) }
@@ -88,10 +84,9 @@ fun LoginScreen(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        // Same 9:16 Green Wave Background as Splash Screen
+
         SplashScreenBackground()
 
-        // Login Form Container in Center Zone
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -100,9 +95,10 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+
             Spacer(modifier = Modifier.height(28.dp))
 
-            // Brand Logo
+            // Logo
             Image(
                 painter = painterResource(id = R.drawable.in_logo),
                 contentDescription = "Ionoxe Tech Solutions Logo",
@@ -111,7 +107,6 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Welcome Header
             Text(
                 text = "Welcome Back",
                 fontSize = 24.sp,
@@ -131,7 +126,7 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Email / Student ID Field
+            // Email Field
             OutlinedTextField(
                 value = email,
                 onValueChange = {
@@ -149,7 +144,7 @@ fun LoginScreen(
                     )
                 },
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = ProfessionalGreen,
                     focusedLabelColor = ProfessionalGreen,
@@ -179,7 +174,11 @@ fun LoginScreen(
                     )
                 },
                 trailingIcon = {
-                    val icon = if (isPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
+                    val icon = if (isPasswordVisible)
+                        Icons.Default.Visibility
+                    else
+                        Icons.Default.VisibilityOff
+
                     IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
                         Icon(
                             imageVector = icon,
@@ -188,7 +187,10 @@ fun LoginScreen(
                         )
                     }
                 },
-                visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                visualTransformation = if (isPasswordVisible)
+                    VisualTransformation.None
+                else
+                    PasswordVisualTransformation(),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 colors = OutlinedTextFieldDefaults.colors(
@@ -202,21 +204,17 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            // Remember Me & Forgot Password Row
+            // Remember Me + Forgot Password
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(
                         checked = rememberMe,
                         onCheckedChange = { rememberMe = it },
-                        colors = CheckboxDefaults.colors(
-                            checkedColor = ProfessionalGreen
-                        )
+                        colors = CheckboxDefaults.colors(checkedColor = ProfessionalGreen)
                     )
                     Text(
                         text = "Remember me",
@@ -231,25 +229,6 @@ fun LoginScreen(
                     fontWeight = FontWeight.SemiBold,
                     color = ProfessionalGreen,
                     modifier = Modifier.clickable {
-                        if (email.isBlank()) {
-                            errorMessage = "Enter your email above to reset password"
-                        } else {
-                            isLoading = true
-                            coroutineScope.launch {
-                                try {
-                                    val res = ApiClient.apiService.resetPasswordForm(email.trim())
-                                    isLoading = false
-                                    if (res.isSuccessful) {
-                                        successMessage = "Password reset link sent to your email!"
-                                    } else {
-                                        errorMessage = "Unable to process reset request"
-                                    }
-                                } catch (_: Exception) {
-                                    isLoading = false
-                                    errorMessage = "Reset requested for $email"
-                                }
-                            }
-                        }
                         onForgotPasswordClick()
                     }
                 )
@@ -257,30 +236,32 @@ fun LoginScreen(
 
             // Error Message
             if (errorMessage != null) {
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = errorMessage!!,
                     color = Color.Red,
                     fontSize = 12.sp,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
             // Success Message
             if (successMessage != null) {
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = successMessage!!,
                     color = ProfessionalGreen,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Sign In Button (API Call)
+            // ==================== SIGN IN BUTTON ====================
             Button(
                 onClick = {
                     val inputEmail = email.trim()
@@ -288,71 +269,59 @@ fun LoginScreen(
 
                     if (inputEmail.isBlank() || inputPassword.isBlank()) {
                         errorMessage = "Please enter both Email and Password"
-                    } else {
-                        isLoading = true
-                        errorMessage = null
                         successMessage = null
+                        return@Button
+                    }
 
-                        coroutineScope.launch {
-                            try {
-                                // Primary Form URL-Encoded Post (matches Postman form-data / x-www-form-urlencoded)
-                                var response = ApiClient.apiService.loginForm(inputEmail, inputPassword)
-                                if (!response.isSuccessful || response.body()?.status != "success") {
-                                    try {
-                                        val jsonRes = ApiClient.apiService.login(LoginRequest(inputEmail, inputPassword))
-                                        if (jsonRes.isSuccessful && jsonRes.body()?.status == "success") {
-                                            response = jsonRes
-                                        }
-                                    } catch (_: Exception) {}
-                                }
-                                isLoading = false
+                    isLoading = true
+                    errorMessage = null
+                    successMessage = null
 
-                                if (response.isSuccessful && response.body()?.status == "success") {
-                                    val studentObj = response.body()?.student
-                                    val studentId = studentObj?.id ?: 999
-                                    val studentName = studentObj?.name ?: "Student"
+                    coroutineScope.launch {
+                        try {
+                            val response = ApiClient.apiService.login(
+                                LoginRequest(
+                                    email = inputEmail,
+                                    password = inputPassword
+                                )
+                            )
+
+                            isLoading = false
+
+                            // Debug logs
+                            Log.d("LOGIN_DEBUG", "HTTP Code: ${response.code()}")
+                            Log.d("LOGIN_DEBUG", "Is Successful: ${response.isSuccessful}")
+                            Log.d("LOGIN_DEBUG", "Body: ${response.body()}")
+                            Log.d("LOGIN_DEBUG", "ErrorBody: ${response.errorBody()?.string()}")
+
+                            if (response.isSuccessful) {
+                                val body = response.body()
+
+                                if (body?.status == "success" && body.student != null) {
+                                    val student = body.student
+                                    val studentId = student.id
+                                    val studentName = student.name ?: "Student"
 
                                     successMessage = "Welcome $studentName!"
                                     onLoginSuccess(studentId, studentName)
+
                                 } else {
-                                    val errorBody = response.errorBody()?.string()
-                                    var parsedMsg: String? = null
-                                    if (!errorBody.isNullOrEmpty()) {
-                                        try {
-                                            @Suppress("DEPRECATION")
-                                            val jsonElement = JsonParser().parse(errorBody)
-                                            if (jsonElement.isJsonObject) {
-                                                val errObj: JsonObject = jsonElement.asJsonObject
-                                                if (errObj.has("message")) {
-                                                    parsedMsg = errObj.get("message").asString
-                                                }
-                                            }
-                                        } catch (_: Exception) {}
-                                    }
-                                    errorMessage = parsedMsg ?: response.body()?.message ?: "Invalid email/Student ID or password."
+                                    errorMessage = body?.message ?: "Invalid email or password"
                                 }
-                            } catch (e: Exception) {
-                                isLoading = false
-                                // Demo Credentials Fallback
-                                if ((inputEmail == "demo@ionox.in" || inputEmail == "demo") && inputPassword == "demo") {
-                                    successMessage = "Welcome Demo Student!"
-                                    onLoginSuccess(999, "Demo Student")
-                                } else {
-                                    val msg = e.localizedMessage ?: ""
-                                    errorMessage = if (msg.contains("JsonReader") || msg.contains("malformed")) {
-                                        "Invalid email/Student ID or password."
-                                    } else {
-                                        "Unable to connect to server. Please check your internet connection."
-                                    }
-                                }
+                            } else {
+                                val errorJson = response.errorBody()?.string()
+                                errorMessage = "Error ${response.code()}: ${errorJson ?: "Unknown error"}"
                             }
+
+                        } catch (e: Exception) {
+                            isLoading = false
+                            Log.e("LOGIN_DEBUG", "Exception", e)
+                            errorMessage = "Network Error: ${e.message}"
                         }
                     }
                 },
                 enabled = !isLoading,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = ProfessionalGreen
-                ),
+                colors = ButtonDefaults.buttonColors(containerColor = ProfessionalGreen),
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -399,7 +368,7 @@ fun LoginScreen(
                 )
             }
 
-            // Google Sign In Button
+            // Google Sign In
             OutlinedButton(
                 onClick = { onGoogleLoginClick() },
                 border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
@@ -429,7 +398,7 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Footer Contact Admin / Help
+            // Contact Admin
             Row(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically

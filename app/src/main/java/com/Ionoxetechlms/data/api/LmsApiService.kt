@@ -10,7 +10,7 @@ import retrofit2.http.Query
 
 interface LmsApiService {
 
-    // Primary Form URL-Encoded Login
+    // Form URL-Encoded Login
     @FormUrlEncoded
     @POST("api/login.php")
     suspend fun loginForm(
