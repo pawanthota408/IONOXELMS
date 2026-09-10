@@ -70,33 +70,57 @@ if ($conn->connect_error) {
 
 /*
 |--------------------------------------------------------------------------
-| READ INPUT (JSON + POST + REQUEST)
+| BULLETPROOF MULTI-SOURCE INPUT EXTRACTION
 |--------------------------------------------------------------------------
 */
 
 $rawInput = file_get_contents("php://input");
-$jsonData = [];
+$input = [];
 
+// Method 1: Decode JSON
 if (!empty($rawInput)) {
     $decoded = json_decode($rawInput, true);
     if (is_array($decoded)) {
-        $jsonData = $decoded;
+        $input = array_merge($input, $decoded);
     }
 }
 
-$email = trim(
-    $jsonData["email"]
-    ?? $_POST["email"]
-    ?? $_REQUEST["email"]
-    ?? ""
-);
+// Method 2: Parse raw form-urlencoded string
+if (empty($input) && !empty($rawInput)) {
+    parse_str($rawInput, $parsedStr);
+    if (is_array($parsedStr)) {
+        $input = array_merge($input, $parsedStr);
+    }
+}
 
-$password = trim(
-    $jsonData["password"]
-    ?? $_POST["password"]
-    ?? $_REQUEST["password"]
-    ?? ""
-);
+// Method 3: Merge $_POST, $_REQUEST, $_GET
+if (is_array($_POST)) {
+    $input = array_merge($_POST, $input);
+}
+if (is_array($_REQUEST)) {
+    $input = array_merge($_REQUEST, $input);
+}
+if (is_array($_GET)) {
+    $input = array_merge($_GET, $input);
+}
+
+// Extract email / student ID
+$email = "";
+foreach (['email', 'student_id', 'username', 'user'] as $key) {
+    if (!empty($input[$key]) && is_string($input[$key])) {
+        $email = trim($input[$key]);
+        break;
+    }
+}
+
+// Extract password
+$password = "";
+foreach (['password', 'pwd', 'pass'] as $key) {
+    if (!empty($input[$key]) && is_string($input[$key])) {
+        $password = trim($input[$key]);
+        break;
+    }
+}
 
 /*
 |--------------------------------------------------------------------------
