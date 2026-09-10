@@ -2,6 +2,7 @@ package com.Ionoxetechlms.ui.certificates
 
 import android.content.Intent
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -18,11 +19,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Fullscreen
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -31,6 +36,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -48,22 +55,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.Ionoxetechlms.data.api.ApiClient
 import com.Ionoxetechlms.data.api.CertificateItem
 import com.Ionoxetechlms.data.api.CertificateResponse
+import com.Ionoxetechlms.ui.dashboard.DashboardBottomNavigation
 import com.Ionoxetechlms.ui.theme.IONOXELMSTheme
 import com.Ionoxetechlms.ui.theme.LightGreenSoft
 import com.Ionoxetechlms.ui.theme.ProfessionalGreen
 
 val BrandOrange = Color(0xFFF97316)
 val OrangeBg = Color(0xFFFFF7ED)
-val OrangeBorder = Color(0x33F97316)
 val NavyDark = Color(0xFF0F172A)
 val LightMuted = Color(0xFF94A3B8)
 
 /**
  * Student Certificates Screen in Jetpack Compose
- * Replicates web 'certificates.php'
+ * Full In-App Fullscreen View, Native Share, and Download
  */
 @Composable
 fun CertificatesScreen(
@@ -73,6 +82,12 @@ fun CertificatesScreen(
     val context = LocalContext.current
     var isLoading by remember { mutableStateOf(true) }
     var certificatesData by remember { mutableStateOf<CertificateResponse?>(null) }
+    var fullScreenCertificateUrl by remember { mutableStateOf<String?>(null) }
+
+    // System Back Handler: Returns 1 step back
+    BackHandler {
+        onBackClick()
+    }
 
     LaunchedEffect(studentId) {
         try {
@@ -102,129 +117,218 @@ fun CertificatesScreen(
 
     val certList = certificatesData?.certificates ?: emptyList()
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = Color(0xFFF1F3F8)
-    ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+    Scaffold(
+        bottomBar = {
+            DashboardBottomNavigation(
+                selectedTab = 4,
+                pendingTasks = 0,
+                onTabSelected = { onBackClick() }
+            )
+        }
+    ) { innerPadding ->
+        Surface(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+            color = Color(0xFFF1F3F8)
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
 
-            // Navigation Topbar
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = Color.White,
-                shadowElevation = 2.dp
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                // Navigation Topbar
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = Color.White,
+                    shadowElevation = 2.dp
                 ) {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = NavyDark
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = onBackClick) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = NavyDark
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "My Certificates",
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = NavyDark
                         )
                     }
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "My Certificates",
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = NavyDark
-                    )
                 }
-            }
 
-            if (isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = ProfessionalGreen)
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    // Credentials Banner Card
-                    item {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            border = BorderStroke(1.dp, Color(0xFFE2E8F0))
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(18.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(46.dp)
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .background(OrangeBg),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.WorkspacePremium,
-                                        contentDescription = null,
-                                        tint = BrandOrange,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.width(14.dp))
-
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = "Professional Credentials",
-                                        fontSize = 17.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = NavyDark
-                                    )
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text(
-                                        text = "Access and download your verified course completion certificates.",
-                                        fontSize = 11.sp,
-                                        color = LightMuted
-                                    )
-                                }
-                            }
-                        }
+                if (isLoading) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = ProfessionalGreen)
                     }
-
-                    // Certificates List
-                    if (certList.isEmpty()) {
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        // Credentials Banner Card
                         item {
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.White)
+                                shape = RoundedCornerShape(14.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                border = BorderStroke(1.dp, Color(0xFFE2E8F0))
                             ) {
-                                Text(
-                                    text = "No certificates issued yet.",
-                                    fontSize = 13.sp,
-                                    color = LightMuted,
-                                    modifier = Modifier.padding(24.dp)
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(18.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(46.dp)
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(OrangeBg),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.WorkspacePremium,
+                                            contentDescription = null,
+                                            tint = BrandOrange,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.width(14.dp))
+
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = "Professional Credentials",
+                                            fontSize = 17.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = NavyDark
+                                        )
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(
+                                            text = "Access, view, share and download your verified completion certificates.",
+                                            fontSize = 11.sp,
+                                            color = LightMuted
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // Certificates List
+                        if (certList.isEmpty()) {
+                            item {
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                                ) {
+                                    Text(
+                                        text = "No certificates issued yet.",
+                                        fontSize = 13.sp,
+                                        color = LightMuted,
+                                        modifier = Modifier.padding(24.dp)
+                                    )
+                                }
+                            }
+                        } else {
+                            items(certList) { cert ->
+                                CertificateCard(
+                                    item = cert,
+                                    onFullScreenClick = {
+                                        fullScreenCertificateUrl = cert.imageUrl ?: "https://iili.io/fViYYl9.png"
+                                    },
+                                    onShareClick = {
+                                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                            type = "text/plain"
+                                            putExtra(Intent.EXTRA_SUBJECT, cert.certificateName)
+                                            putExtra(
+                                                Intent.EXTRA_TEXT,
+                                                "View my verified certificate '${cert.certificateName}' (ID: ${cert.certificateId}) from IoNoxe Tech Solutions: ${cert.imageUrl ?: "https://ionox.in"}"
+                                            )
+                                        }
+                                        context.startActivity(Intent.createChooser(shareIntent, "Share Certificate"))
+                                    },
+                                    onDownloadClick = {
+                                        val url = cert.imageUrl ?: "https://ionox.in/lms/student/certificates.php"
+                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                        context.startActivity(intent)
+                                    }
                                 )
                             }
                         }
-                    } else {
-                        items(certList) { cert ->
-                            CertificateCard(
-                                item = cert,
-                                onOpenClick = {
-                                    val url = cert.imageUrl ?: "https://ionox.in/lms/student/certificates.php"
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                                    context.startActivity(intent)
+                    }
+                }
+            }
+        }
+
+        // Full Screen Certificate In-App Viewer Modal
+        fullScreenCertificateUrl?.let { url ->
+            Dialog(
+                onDismissRequest = { fullScreenCertificateUrl = null },
+                properties = DialogProperties(usePlatformDefaultWidth = false)
+            ) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = Color.Black
+                ) {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.White)
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(16.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(260.dp)
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(OrangeBg),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.WorkspacePremium,
+                                            contentDescription = null,
+                                            tint = BrandOrange,
+                                            modifier = Modifier.size(64.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Text("Verified Credential Preview", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = NavyDark)
                                 }
-                            )
+                            }
+                        }
+
+                        // Top Close Icon Button
+                        IconButton(
+                            onClick = { fullScreenCertificateUrl = null },
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .align(Alignment.TopEnd)
+                                .background(Color.White.copy(alpha = 0.2f), CircleShape)
+                        ) {
+                            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
                         }
                     }
                 }
@@ -236,7 +340,9 @@ fun CertificatesScreen(
 @Composable
 fun CertificateCard(
     item: CertificateItem,
-    onOpenClick: () -> Unit
+    onFullScreenClick: () -> Unit,
+    onShareClick: () -> Unit,
+    onDownloadClick: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -298,16 +404,43 @@ fun CertificateCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Action Button
-            Button(
-                onClick = onOpenClick,
-                colors = ButtonDefaults.buttonColors(containerColor = NavyDark),
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.fillMaxWidth()
+            // Action Buttons Row (Full Screen, Share, Download)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(Icons.Default.Download, contentDescription = "Download", tint = Color.White, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("Download Certificate", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                OutlinedButton(
+                    onClick = onFullScreenClick,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(8.dp),
+                    border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                ) {
+                    Icon(Icons.Default.Fullscreen, contentDescription = "View", modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("View", fontSize = 11.sp)
+                }
+
+                OutlinedButton(
+                    onClick = onShareClick,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(8.dp),
+                    border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                ) {
+                    Icon(Icons.Default.Share, contentDescription = "Share", modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Share", fontSize = 11.sp)
+                }
+
+                Button(
+                    onClick = onDownloadClick,
+                    modifier = Modifier.weight(1.2f),
+                    colors = ButtonDefaults.buttonColors(containerColor = NavyDark),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Icon(Icons.Default.Download, contentDescription = "Download", tint = Color.White, modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Download", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
             }
         }
     }
