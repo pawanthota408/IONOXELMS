@@ -33,7 +33,6 @@ import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Videocam
-import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
@@ -82,6 +81,7 @@ import com.Ionoxetechlms.data.api.ScheduleItem
 import com.Ionoxetechlms.ui.assignments.AssignmentsScreen
 import com.Ionoxetechlms.ui.attendance.AttendanceScreen
 import com.Ionoxetechlms.ui.courses.MyCoursesScreen
+import com.Ionoxetechlms.ui.profile.ProfileScreen
 import com.Ionoxetechlms.ui.theme.IONOXELMSTheme
 import com.Ionoxetechlms.ui.theme.ProfessionalGreen
 import kotlinx.coroutines.launch
@@ -96,7 +96,9 @@ fun DashboardScreen(
     studentId: Int = 999,
     studentName: String = "Student",
     onLogoutClick: () -> Unit = {},
-    onAssignmentClick: (Int, String) -> Unit = { _, _ -> }
+    onAssignmentClick: (Int, String) -> Unit = { _, _ -> },
+    onCertificatesClick: () -> Unit = {},
+    onCourseClick: (Int) -> Unit = {}
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -136,6 +138,8 @@ fun DashboardScreen(
         onTabSelected = { selectedTab = it },
         onLogoutClick = onLogoutClick,
         onAssignmentClick = onAssignmentClick,
+        onCertificatesClick = onCertificatesClick,
+        onCourseClick = onCourseClick,
         onJoinMeetingClick = { link ->
             if (!link.isNullOrBlank()) {
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(link))
@@ -158,6 +162,8 @@ fun DashboardContent(
     onTabSelected: (Int) -> Unit = {},
     onLogoutClick: () -> Unit = {},
     onAssignmentClick: (Int, String) -> Unit = { _, _ -> },
+    onCertificatesClick: () -> Unit = {},
+    onCourseClick: (Int) -> Unit = {},
     onJoinMeetingClick: (String?) -> Unit = {}
 ) {
     Scaffold(
@@ -251,7 +257,8 @@ fun DashboardContent(
                     1 -> {
                         MyCoursesScreen(
                             studentId = studentId,
-                            studentName = dashboardData.studentName ?: "Student"
+                            studentName = dashboardData.studentName ?: "Student",
+                            onCourseClick = onCourseClick
                         )
                     }
                     2 -> {
@@ -265,6 +272,14 @@ fun DashboardContent(
                         AttendanceScreen(
                             studentId = studentId,
                             studentName = dashboardData.studentName ?: "Student"
+                        )
+                    }
+                    4 -> {
+                        ProfileScreen(
+                            studentId = studentId,
+                            studentName = dashboardData.studentName ?: "Student",
+                            onLogoutClick = onLogoutClick,
+                            onCertificatesClick = onCertificatesClick
                         )
                     }
                     else -> {
@@ -305,7 +320,7 @@ fun DashboardContent(
                             )
 
                             // 5. MY COURSES GRID
-                            MyCoursesSection(courses = dashboardData.courses)
+                            MyCoursesSection(courses = dashboardData.courses, onCourseClick = onCourseClick)
 
                             // 6. LATEST OPPORTUNITIES / JOBS
                             if (dashboardData.jobs.isNotEmpty()) {
@@ -657,7 +672,10 @@ fun ScheduleCardItem(
  * My Courses Grid Section
  */
 @Composable
-fun MyCoursesSection(courses: List<CourseItem>) {
+fun MyCoursesSection(
+    courses: List<CourseItem>,
+    onCourseClick: (Int) -> Unit = {}
+) {
     Column {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -697,7 +715,7 @@ fun MyCoursesSection(courses: List<CourseItem>) {
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 courses.forEach { course ->
-                    CourseCardItem(course = course)
+                    CourseCardItem(course = course, onClick = { onCourseClick(course.id) })
                 }
             }
         }
@@ -705,12 +723,17 @@ fun MyCoursesSection(courses: List<CourseItem>) {
 }
 
 @Composable
-fun CourseCardItem(course: CourseItem) {
+fun CourseCardItem(
+    course: CourseItem,
+    onClick: () -> Unit = {}
+) {
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
     ) {
         Row(
             modifier = Modifier

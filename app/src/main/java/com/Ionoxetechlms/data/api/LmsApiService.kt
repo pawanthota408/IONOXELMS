@@ -64,4 +64,31 @@ interface LmsApiService {
     suspend fun submitAssignment(
         @Body request: AssignmentSubmitRequest
     ): Response<AssignmentSubmitResponse>
+
+    @GET("api/profile")
+    suspend fun getProfile(
+        @Query("student_id") studentId: Int
+    ): Response<ProfileResponse>
+
+    @FormUrlEncoded
+    @POST("api/profile")
+    suspend fun updateProfile(
+        @Field("student_id") studentId: Int,
+        @Field("update_profile") updateProfile: Int = 1,
+        @Field("name") name: String,
+        @Field("email") email: String,
+        @Field("phone") phone: String,
+        @Field("address") address: String
+    ): Response<ProfileResponse>
+
+    @GET("api/certificates")
+    suspend fun getCertificates(
+        @Query("student_id") studentId: Int
+    ): Response<CertificateResponse>
+
+    @GET("api/course_lessons")
+    suspend fun getCourseLessons(
+        @Query("student_id") studentId: Int,
+        @Query("course_id") courseId: Int
+    ): Response<CourseLessonsResponse>
 }

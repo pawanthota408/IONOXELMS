@@ -156,6 +156,64 @@ data class AssignmentSubmitResponse(
 )
 
 /**
+ * Profile Response Payload
+ */
+data class ProfileResponse(
+    @SerializedName("status") val status: String,
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("student_id") val studentId: String? = null,
+    @SerializedName("name") val name: String? = null,
+    @SerializedName("email") val email: String? = null,
+    @SerializedName("phone") val phone: String? = null,
+    @SerializedName("address") val address: String? = null,
+    @SerializedName("batch_name") val batchName: String? = null,
+    @SerializedName("created_at") val createdAt: String? = null
+)
+
+/**
+ * Certificate Item Model
+ */
+data class CertificateItem(
+    @SerializedName("certificate_id") val certificateId: String? = null,
+    @SerializedName("certificate_name") val certificateName: String? = null,
+    @SerializedName("course_title") val courseTitle: String? = null,
+    @SerializedName("image_url") val imageUrl: String? = null,
+    @SerializedName("issued_at") val issuedAt: String? = null
+)
+
+/**
+ * Certificate List Response Payload
+ */
+data class CertificateResponse(
+    @SerializedName("status") val status: String,
+    @SerializedName("total") val total: Int = 0,
+    @SerializedName("certificates") val certificates: List<CertificateItem> = emptyList()
+)
+
+/**
+ * Lesson Item Model
+ */
+data class LessonItem(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("title") val title: String? = null,
+    @SerializedName("video_url") val videoUrl: String? = null,
+    @SerializedName("description") val description: String? = null
+)
+
+/**
+ * Course Lessons Response Payload
+ */
+data class CourseLessonsResponse(
+    @SerializedName("status") val status: String,
+    @SerializedName("course_id") val courseId: Int = 0,
+    @SerializedName("title") val title: String? = null,
+    @SerializedName("description") val description: String? = null,
+    @SerializedName("thumbnail") val thumbnail: String? = null,
+    @SerializedName("total_lessons") val totalLessons: Int = 0,
+    @SerializedName("lessons") val lessons: List<LessonItem> = emptyList()
+)
+
+/**
  * Complete Dashboard Data Response Payload
  */
 data class DashboardResponse(

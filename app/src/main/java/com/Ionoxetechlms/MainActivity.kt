@@ -15,6 +15,8 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.Ionoxetechlms.data.pref.UserPreferences
 import com.Ionoxetechlms.ui.assignments.AssignmentAttemptScreen
 import com.Ionoxetechlms.ui.assignments.AssignmentDetailScreen
+import com.Ionoxetechlms.ui.certificates.CertificatesScreen
+import com.Ionoxetechlms.ui.courses.CourseLessonsScreen
 import com.Ionoxetechlms.ui.dashboard.DashboardScreen
 import com.Ionoxetechlms.ui.login.LoginScreen
 import com.Ionoxetechlms.ui.splash.SplashScreen
@@ -25,7 +27,9 @@ enum class AppScreen {
     LOGIN,
     MAIN,
     ASSIGNMENT_ATTEMPT,
-    ASSIGNMENT_DETAIL
+    ASSIGNMENT_DETAIL,
+    CERTIFICATES,
+    COURSE_LESSONS
 }
 
 class MainActivity : ComponentActivity() {
@@ -41,6 +45,7 @@ class MainActivity : ComponentActivity() {
                 var loggedInStudentId by remember { mutableIntStateOf(UserPreferences.getStudentId(context)) }
                 var loggedInStudentName by remember { mutableStateOf(UserPreferences.getStudentName(context)) }
                 var selectedAssignmentId by remember { mutableIntStateOf(1) }
+                var selectedCourseId by remember { mutableIntStateOf(1) }
 
                 Crossfade(targetState = currentScreen, label = "ScreenTransition") { screen ->
                     when (screen) {
@@ -82,6 +87,13 @@ class MainActivity : ComponentActivity() {
                                     } else {
                                         currentScreen = AppScreen.ASSIGNMENT_DETAIL
                                     }
+                                },
+                                onCertificatesClick = {
+                                    currentScreen = AppScreen.CERTIFICATES
+                                },
+                                onCourseClick = { courseId ->
+                                    selectedCourseId = courseId
+                                    currentScreen = AppScreen.COURSE_LESSONS
                                 }
                             )
                         }
@@ -101,6 +113,23 @@ class MainActivity : ComponentActivity() {
                             AssignmentDetailScreen(
                                 studentId = loggedInStudentId,
                                 assignmentId = selectedAssignmentId,
+                                onBackClick = {
+                                    currentScreen = AppScreen.MAIN
+                                }
+                            )
+                        }
+                        AppScreen.CERTIFICATES -> {
+                            CertificatesScreen(
+                                studentId = loggedInStudentId,
+                                onBackClick = {
+                                    currentScreen = AppScreen.MAIN
+                                }
+                            )
+                        }
+                        AppScreen.COURSE_LESSONS -> {
+                            CourseLessonsScreen(
+                                studentId = loggedInStudentId,
+                                courseId = selectedCourseId,
                                 onBackClick = {
                                     currentScreen = AppScreen.MAIN
                                 }
