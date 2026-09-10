@@ -38,4 +38,9 @@ interface LmsApiService {
     suspend fun getDashboard(
         @Query("student_id") studentId: Int
     ): Response<DashboardResponse>
+
+    @GET("api/mycourses")
+    suspend fun getMyCourses(
+        @Query("student_id") studentId: Int
+    ): Response<DashboardResponse>
 }

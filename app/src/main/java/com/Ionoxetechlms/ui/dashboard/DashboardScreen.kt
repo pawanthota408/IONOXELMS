@@ -2,6 +2,7 @@ package com.Ionoxetechlms.ui.dashboard
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -25,7 +26,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material.icons.filled.Book
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Help
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MenuBook
@@ -47,6 +47,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -62,7 +63,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -78,6 +78,7 @@ import com.Ionoxetechlms.data.api.DashboardResponse
 import com.Ionoxetechlms.data.api.JobItem
 import com.Ionoxetechlms.data.api.NextClass
 import com.Ionoxetechlms.data.api.ScheduleItem
+import com.Ionoxetechlms.ui.courses.MyCoursesScreen
 import com.Ionoxetechlms.ui.theme.IONOXELMSTheme
 import com.Ionoxetechlms.ui.theme.ProfessionalGreen
 import kotlinx.coroutines.launch
@@ -119,6 +120,7 @@ fun DashboardScreen(
     }
 
     DashboardContent(
+        studentId = studentId,
         isLoading = isLoading,
         dashboardData = dashboardData ?: createMockDashboardData(studentName),
         selectedTab = selectedTab,
@@ -139,6 +141,7 @@ fun DashboardScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardContent(
+    studentId: Int = 999,
     isLoading: Boolean = false,
     dashboardData: DashboardResponse,
     selectedTab: Int = 0,
@@ -233,51 +236,61 @@ fun DashboardContent(
                     CircularProgressIndicator(color = ProfessionalGreen)
                 }
             } else {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp)
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(20.dp)
-                ) {
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // 1. WELCOME STRIP BANNER
-                    WelcomeStripBanner(
-                        studentName = dashboardData.studentName ?: "Student",
-                        pendingTasks = dashboardData.assignmentsPending
-                    )
-
-                    // 2. STATS ROW (3 Cards: Enrolled, Quizzes, Pending Tasks)
-                    StatsSummaryRow(
-                        enrolled = dashboardData.enrolledCount,
-                        quizzes = dashboardData.quizCount,
-                        pending = dashboardData.assignmentsPending
-                    )
-
-                    // 3. NEXT CLASS BANNER (if available)
-                    if (dashboardData.nextClass != null) {
-                        NextClassBanner(
-                            nextClass = dashboardData.nextClass,
-                            onJoinClick = onJoinMeetingClick
+                when (selectedTab) {
+                    1 -> {
+                        MyCoursesScreen(
+                            studentId = studentId,
+                            studentName = dashboardData.studentName ?: "Student"
                         )
                     }
+                    else -> {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 16.dp)
+                                .verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(20.dp)
+                        ) {
+                            Spacer(modifier = Modifier.height(8.dp))
 
-                    // 4. CLASS SCHEDULE TABLE
-                    ClassScheduleSection(
-                        schedules = dashboardData.weeklySchedules,
-                        onJoinClick = onJoinMeetingClick
-                    )
+                            // 1. WELCOME STRIP BANNER
+                            WelcomeStripBanner(
+                                studentName = dashboardData.studentName ?: "Student",
+                                pendingTasks = dashboardData.assignmentsPending
+                            )
 
-                    // 5. MY COURSES GRID
-                    MyCoursesSection(courses = dashboardData.courses)
+                            // 2. STATS ROW (3 Cards: Enrolled, Quizzes, Pending Tasks)
+                            StatsSummaryRow(
+                                enrolled = dashboardData.enrolledCount,
+                                quizzes = dashboardData.quizCount,
+                                pending = dashboardData.assignmentsPending
+                            )
 
-                    // 6. LATEST OPPORTUNITIES / JOBS
-                    if (dashboardData.jobs.isNotEmpty()) {
-                        JobsSection(jobs = dashboardData.jobs)
+                            // 3. NEXT CLASS BANNER (if available)
+                            if (dashboardData.nextClass != null) {
+                                NextClassBanner(
+                                    nextClass = dashboardData.nextClass,
+                                    onJoinClick = onJoinMeetingClick
+                                )
+                            }
+
+                            // 4. CLASS SCHEDULE TABLE
+                            ClassScheduleSection(
+                                schedules = dashboardData.weeklySchedules,
+                                onJoinClick = onJoinMeetingClick
+                            )
+
+                            // 5. MY COURSES GRID
+                            MyCoursesSection(courses = dashboardData.courses)
+
+                            // 6. LATEST OPPORTUNITIES / JOBS
+                            if (dashboardData.jobs.isNotEmpty()) {
+                                JobsSection(jobs = dashboardData.jobs)
+                            }
+
+                            Spacer(modifier = Modifier.height(24.dp))
+                        }
                     }
-
-                    Spacer(modifier = Modifier.height(24.dp))
                 }
             }
         }
@@ -319,44 +332,28 @@ fun WelcomeStripBanner(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            if (pendingTasks > 0) {
-                Box(
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = Color(0xFFFFF7ED),
+                border = BorderStroke(1.dp, Color(0xFFFED7AA))
+            ) {
+                Row(
                     modifier = Modifier
-                        .clip(CircleShape)
-                        .background(Color(0xFFFFF7ED))
-                        .border(1.dp, Color(0xFFFED7AA), CircleShape)
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "⚠️ $pendingTasks pending task${if (pendingTasks > 1) "s" else ""}",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFEA580C)
+                        text = "📋",
+                        fontSize = 16.sp
                     )
-                }
-            } else {
-                Box(
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .background(Color(0xFFF0FDF4))
-                        .border(1.dp, Color(0xFFBBF7D0), CircleShape)
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.CheckCircle,
-                            contentDescription = null,
-                            tint = Color(0xFF16A34A),
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "All caught up!",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF16A34A)
-                        )
-                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = if (pendingTasks > 0) "You have $pendingTasks pending task(s) to complete." else "You're all caught up with your tasks!",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFFC2410C)
+                    )
                 }
             }
         }
@@ -364,7 +361,7 @@ fun WelcomeStripBanner(
 }
 
 /**
- * 3 Stats Summary Row Cards
+ * Stats Summary Row
  */
 @Composable
 fun StatsSummaryRow(
@@ -381,24 +378,26 @@ fun StatsSummaryRow(
             title = "Enrolled",
             value = enrolled.toString(),
             icon = Icons.Default.Book,
-            iconBg = Color(0xFFFFF7ED),
-            iconTint = Color(0xFFF97316)
+            accentColor = Color(0xFFF97316),
+            bgColor = Color(0xFFFFF7ED)
         )
+
         StatCard(
             modifier = Modifier.weight(1f),
             title = "Quizzes",
             value = quizzes.toString(),
             icon = Icons.Default.Help,
-            iconBg = Color(0xFFF0FDF4),
-            iconTint = Color(0xFF16A34A)
+            accentColor = ProfessionalGreen,
+            bgColor = Color(0xFFECFDF5)
         )
+
         StatCard(
             modifier = Modifier.weight(1f),
             title = "Pending",
             value = pending.toString(),
             icon = Icons.Default.Assignment,
-            iconBg = Color(0xFFF0F9FF),
-            iconTint = Color(0xFF0891B2)
+            accentColor = Color(0xFF0891B2),
+            bgColor = Color(0xFFECFEFF)
         )
     }
 }
@@ -409,8 +408,8 @@ fun StatCard(
     title: String,
     value: String,
     icon: ImageVector,
-    iconBg: Color,
-    iconTint: Color
+    accentColor: Color,
+    bgColor: Color
 ) {
     Card(
         modifier = modifier,
@@ -418,38 +417,39 @@ fun StatCard(
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        Column(
+            modifier = Modifier.padding(14.dp),
+            horizontalAlignment = Alignment.Start
         ) {
             Box(
                 modifier = Modifier
-                    .size(38.dp)
+                    .size(36.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(iconBg),
+                    .background(bgColor),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
-                    contentDescription = null,
-                    tint = iconTint,
+                    contentDescription = title,
+                    tint = accentColor,
                     modifier = Modifier.size(20.dp)
                 )
             }
-            Column {
-                Text(
-                    text = value,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A)
-                )
-                Text(
-                    text = title,
-                    fontSize = 10.sp,
-                    color = Color(0xFF64748B)
-                )
-            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = value,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF0F172A)
+            )
+
+            Text(
+                text = title,
+                fontSize = 11.sp,
+                color = Color(0xFF64748B)
+            )
         }
     }
 }
@@ -463,53 +463,78 @@ fun NextClassBanner(
     onJoinClick: (String?) -> Unit
 ) {
     Card(
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF7ED)),
-        border = CardDefaults.outlinedCardBorder().copy(brush = SolidColor(Color(0xFFFED7AA))),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.padding(20.dp)
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(100.dp),
+                    color = Color(0xFF22C55E).copy(alpha = 0.2f)
+                ) {
+                    Text(
+                        text = "LIVE NOW",
+                        color = Color(0xFF4ADE80),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    )
+                }
+
                 Text(
-                    text = "NEXT CLASS",
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFFEA580C),
-                    letterSpacing = 1.sp
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = nextClass.courseTitle ?: "Scheduled Class",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A)
-                )
-                Text(
-                    text = "${nextClass.startDate ?: ""} · ${nextClass.startTime ?: ""} · ${nextClass.trainerName ?: "Instructor"}",
-                    fontSize = 11.sp,
-                    color = Color(0xFF64748B)
+                    text = "${nextClass.startDate ?: "Today"} ${nextClass.startTime ?: ""}",
+                    color = Color(0xFF94A3B8),
+                    fontSize = 12.sp
                 )
             }
 
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = nextClass.courseTitle ?: "Upcoming Class",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+
+            if (!nextClass.trainerName.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Trainer: ${nextClass.trainerName}",
+                    fontSize = 13.sp,
+                    color = Color(0xFFCBD5E1)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             Button(
                 onClick = { onJoinClick(nextClass.meetingLink) },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF97316)),
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.height(36.dp)
+                colors = ButtonDefaults.buttonColors(containerColor = ProfessionalGreen),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Icon(
                     imageVector = Icons.Default.Videocam,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp)
+                    contentDescription = "Video",
+                    tint = Color.White,
+                    modifier = Modifier.size(18.dp)
                 )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(text = "JOIN", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "JOIN CLASS",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = Color.White
+                )
             }
         }
     }
@@ -524,32 +549,12 @@ fun ClassScheduleSection(
     onJoinClick: (String?) -> Unit
 ) {
     Column {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text = "Class Schedule",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A)
-                )
-                Text(
-                    text = "Upcoming sessions this week",
-                    fontSize = 11.sp,
-                    color = Color(0xFF64748B)
-                )
-            }
-            Text(
-                text = "History →",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = ProfessionalGreen,
-                modifier = Modifier.clickable { }
-            )
-        }
+        Text(
+            text = "Class Schedule",
+            fontSize = 17.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF0F172A)
+        )
 
         Spacer(modifier = Modifier.height(10.dp))
 
@@ -559,23 +564,17 @@ fun ClassScheduleSection(
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Box(
-                    modifier = Modifier
-                        .padding(24.dp)
-                        .fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "No sessions scheduled for this week.",
-                        fontSize = 13.sp,
-                        color = Color(0xFF94A3B8)
-                    )
-                }
+                Text(
+                    text = "No classes scheduled for today.",
+                    fontSize = 13.sp,
+                    color = Color(0xFF64748B),
+                    modifier = Modifier.padding(16.dp)
+                )
             }
         } else {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 schedules.forEach { item ->
-                    ScheduleCard(item = item, onJoinClick = onJoinClick)
+                    ScheduleCardItem(item = item, onJoinClick = onJoinClick)
                 }
             }
         }
@@ -583,7 +582,7 @@ fun ClassScheduleSection(
 }
 
 @Composable
-fun ScheduleCard(
+fun ScheduleCardItem(
     item: ScheduleItem,
     onJoinClick: (String?) -> Unit
 ) {
@@ -596,69 +595,34 @@ fun ScheduleCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.weight(1f)
-            ) {
-                // Date Chip
-                Box(
-                    modifier = Modifier
-                        .size(42.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(if (item.isToday) Color(0xFFF97316) else Color(0xFFF8F9FC))
-                        .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(8.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    val dateParts = (item.startDate ?: "").split("-")
-                    val dayStr = dateParts.lastOrNull() ?: "01"
-                    Text(
-                        text = dayStr,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp,
-                        color = if (item.isToday) Color.White else Color(0xFF0F172A)
-                    )
-                }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = item.courseTitle ?: "Session",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF0F172A)
+                )
 
-                Column {
-                    Text(
-                        text = item.courseTitle ?: "Course Session",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = "${item.startTime ?: ""} · Instructor: ${item.trainerName ?: "Instructor"}",
-                        fontSize = 11.sp,
-                        color = Color(0xFF64748B)
-                    )
-                    if (item.isLive) {
-                        Text(
-                            text = "● LIVE NOW",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF16A34A)
-                        )
-                    }
-                }
+                Spacer(modifier = Modifier.height(2.dp))
+
+                Text(
+                    text = "${item.startDate ?: ""} • ${item.startTime ?: ""}",
+                    fontSize = 12.sp,
+                    color = Color(0xFF64748B)
+                )
             }
 
             if (!item.meetingLink.isNullOrBlank()) {
                 Button(
                     onClick = { onJoinClick(item.meetingLink) },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (item.isLive) Color(0xFFF97316) else ProfessionalGreen
-                    ),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.height(34.dp)
+                    colors = ButtonDefaults.buttonColors(containerColor = ProfessionalGreen),
+                    shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text(text = "JOIN", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text("JOIN", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 }
             }
         }
@@ -666,7 +630,7 @@ fun ScheduleCard(
 }
 
 /**
- * My Courses Section
+ * My Courses Grid Section
  */
 @Composable
 fun MyCoursesSection(courses: List<CourseItem>) {
@@ -678,31 +642,38 @@ fun MyCoursesSection(courses: List<CourseItem>) {
         ) {
             Text(
                 text = "My Courses",
-                fontSize = 16.sp,
+                fontSize = 17.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF0F172A)
             )
+
             Text(
-                text = "View All →",
+                text = "${courses.size} Enrolled",
                 fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = ProfessionalGreen,
-                modifier = Modifier.clickable { }
+                fontWeight = FontWeight.SemiBold,
+                color = ProfessionalGreen
             )
         }
 
         Spacer(modifier = Modifier.height(10.dp))
 
         if (courses.isEmpty()) {
-            Text(
-                text = "You are not enrolled in any courses yet.",
-                fontSize = 13.sp,
-                color = Color(0xFF94A3B8)
-            )
+            Card(
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "No enrolled courses yet.",
+                    fontSize = 13.sp,
+                    color = Color(0xFF64748B),
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
         } else {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 courses.forEach { course ->
-                    CourseCard(course = course)
+                    CourseCardItem(course = course)
                 }
             }
         }
@@ -710,7 +681,7 @@ fun MyCoursesSection(courses: List<CourseItem>) {
 }
 
 @Composable
-fun CourseCard(course: CourseItem) {
+fun CourseCardItem(course: CourseItem) {
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -718,164 +689,150 @@ fun CourseCard(course: CourseItem) {
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
-            modifier = Modifier.padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(54.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Color(0xFFE2E8F0)),
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color(0xFFFFF7ED)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.MenuBook,
                     contentDescription = null,
-                    tint = ProfessionalGreen,
-                    modifier = Modifier.size(28.dp)
+                    tint = Color(0xFFF97316),
+                    modifier = Modifier.size(24.dp)
                 )
             }
 
+            Spacer(modifier = Modifier.width(14.dp))
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = course.title ?: "Enrolled Course",
-                    fontSize = 14.sp,
+                    text = course.title ?: "Course",
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A)
+                    color = Color(0xFF0F172A),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
+
+                Spacer(modifier = Modifier.height(2.dp))
+
                 Text(
-                    text = course.description ?: "Course lessons & assignments",
-                    fontSize = 11.sp,
+                    text = course.description ?: "Active course",
+                    fontSize = 12.sp,
                     color = Color(0xFF64748B),
-                    maxLines = 2,
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
             }
 
             Icon(
                 imageVector = Icons.Default.ArrowForward,
-                contentDescription = "Resume",
-                tint = Color(0xFFF97316),
-                modifier = Modifier.size(20.dp)
+                contentDescription = "Open",
+                tint = Color(0xFF94A3B8),
+                modifier = Modifier.size(18.dp)
             )
         }
     }
 }
 
 /**
- * Jobs Section
+ * Latest Jobs Section
  */
 @Composable
 fun JobsSection(jobs: List<JobItem>) {
     Column {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text = "Latest Opportunities",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A)
-                )
-                Text(
-                    text = "Hand-picked openings for you",
-                    fontSize = 11.sp,
-                    color = Color(0xFF64748B)
-                )
-            }
-            Text(
-                text = "View All →",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = ProfessionalGreen,
-                modifier = Modifier.clickable { }
-            )
-        }
+        Text(
+            text = "Career Opportunities",
+            fontSize = 17.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF0F172A)
+        )
 
         Spacer(modifier = Modifier.height(10.dp))
 
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             jobs.forEach { job ->
-                JobCard(job = job)
+                JobCardItem(job = job)
             }
         }
     }
 }
 
 @Composable
-fun JobCard(job: JobItem) {
+fun JobCardItem(job: JobItem) {
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color(0xFFFFF7ED)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = (job.company ?: "C").take(1).uppercase(),
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFFF97316)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column {
-                        Text(
-                            text = job.title ?: "Opening",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF0F172A)
-                        )
-                        Text(
-                            text = "${job.company ?: ""} · ${job.location ?: "Remote"}",
-                            fontSize = 11.sp,
-                            color = Color(0xFF64748B)
-                        )
-                    }
-                }
+                Text(
+                    text = job.title ?: "Opportunity",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF0F172A)
+                )
 
-                Box(
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .background(Color(0xFFF0FDF4))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                Surface(
+                    shape = RoundedCornerShape(100.dp),
+                    color = Color(0xFFEFF6FF)
                 ) {
                     Text(
-                        text = "NEW",
-                        fontSize = 9.sp,
+                        text = job.location ?: "Remote",
+                        fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF16A34A)
+                        color = Color(0xFF2563EB),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                     )
                 }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = job.company ?: "Ionoxe Partner",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                color = ProfessionalGreen
+            )
+
+            if (!job.description.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = job.description,
+                    fontSize = 12.sp,
+                    color = Color(0xFF64748B),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     }
 }
 
 /**
- * Mobile 5-Tab Bottom Navigation Bar
+ * Bottom Navigation Bar
  */
 @Composable
 fun DashboardBottomNavigation(
-    selectedTab: Int,
-    pendingTasks: Int,
-    onTabSelected: (Int) -> Unit
+    selectedTab: Int = 0,
+    pendingTasks: Int = 0,
+    onTabSelected: (Int) -> Unit = {}
 ) {
     NavigationBar(
         containerColor = Color.White,
@@ -934,74 +891,67 @@ fun DashboardBottomNavigation(
 /**
  * Mock Data Generator
  */
-private fun createMockDashboardData(studentName: String): DashboardResponse {
+fun createMockDashboardData(studentName: String = "Student"): DashboardResponse {
     return DashboardResponse(
         status = "success",
         studentName = studentName,
-        studentId = "STU999",
-        enrolledCount = 3,
-        quizCount = 5,
-        assignmentsPending = 2,
+        studentId = "IO-ST251101",
+        enrolledCount = 2,
+        quizCount = 0,
+        assignmentsPending = 1,
         notifCount = 1,
         nextClass = NextClass(
-            courseTitle = "Full Stack Web Development",
-            trainerName = "Alex Johnson",
-            startDate = "2025-02-24",
-            startTime = "10:00 AM",
+            courseTitle = "Artificial Intelligence & Machine Learning",
+            trainerName = "Lead AI Instructor",
+            startDate = "Today",
+            startTime = "06:00 PM",
             meetingLink = "https://meet.google.com"
         ),
         weeklySchedules = listOf(
             ScheduleItem(
-                id = 1,
-                courseTitle = "Full Stack Web Development",
-                trainerName = "Alex Johnson",
-                startDate = "2025-02-24",
-                startTime = "10:00 AM",
+                id = 101,
+                courseTitle = "AI & Machine Learning Concepts",
+                trainerName = "Lead Instructor",
+                startDate = "Today",
+                startTime = "06:00 PM",
                 meetingLink = "https://meet.google.com",
                 isLive = true,
                 isToday = true
-            ),
-            ScheduleItem(
-                id = 2,
-                courseTitle = "Python & Data Science",
-                trainerName = "Sarah Connor",
-                startDate = "2025-02-26",
-                startTime = "02:00 PM",
-                meetingLink = "https://meet.google.com",
-                isLive = false,
-                isToday = false
             )
         ),
         courses = listOf(
             CourseItem(
-                id = 101,
-                title = "Full Stack Web Development",
-                description = "Master HTML, CSS, JS, PHP, MySQL and React to build modern web apps."
+                id = 1,
+                title = "Artificial Intelligence & Machine Learning",
+                description = "Understand how machines learn, think, and make predictions.",
+                thumbnail = "https://iili.io/fViYYl9.png"
             ),
             CourseItem(
-                id = 102,
-                title = "Python & Data Analytics",
-                description = "Learn Python programming, pandas, data visualization and machine learning basics."
+                id = 2,
+                title = "Full Stack Web Development (MERN)",
+                description = "HTML, CSS, JS, React, Node.js, Express, MongoDB.",
+                thumbnail = ""
             )
         ),
         jobs = listOf(
             JobItem(
-                id = 1,
-                title = "Junior Web Developer",
-                company = "Ionoxe Tech Solutions",
-                location = "Hyderabad / Remote"
+                id = 2,
+                title = "AI/ML Engineer",
+                company = "Levino Softlabs",
+                location = "Work From Office",
+                description = "Build and train machine learning models.",
+                postedDate = "2026-04-18"
             )
         )
     )
 }
 
-@Preview(showBackground = true, widthDp = 360, heightDp = 640)
+@Preview(showBackground = true)
 @Composable
-fun DashboardScreenPreview() {
+fun DashboardPreview() {
     IONOXELMSTheme {
         DashboardContent(
-            isLoading = false,
-            dashboardData = createMockDashboardData("Balaji Thota")
+            dashboardData = createMockDashboardData("Kota Mounika")
         )
     }
 }

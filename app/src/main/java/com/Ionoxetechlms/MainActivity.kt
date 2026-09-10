@@ -10,7 +10,9 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import com.Ionoxetechlms.data.pref.UserPreferences
 import com.Ionoxetechlms.ui.dashboard.DashboardScreen
 import com.Ionoxetechlms.ui.login.LoginScreen
 import com.Ionoxetechlms.ui.splash.SplashScreen
@@ -30,20 +32,30 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             IONOXELMSTheme {
+                val context = LocalContext.current
                 var currentScreen by remember { mutableStateOf(AppScreen.SPLASH) }
-                var loggedInStudentId by remember { mutableIntStateOf(999) }
-                var loggedInStudentName by remember { mutableStateOf("Student") }
+                var loggedInStudentId by remember { mutableIntStateOf(UserPreferences.getStudentId(context)) }
+                var loggedInStudentName by remember { mutableStateOf(UserPreferences.getStudentName(context)) }
 
                 Crossfade(targetState = currentScreen, label = "ScreenTransition") { screen ->
                     when (screen) {
                         AppScreen.SPLASH -> {
                             SplashScreen(
-                                onSplashFinished = { currentScreen = AppScreen.LOGIN }
+                                onSplashFinished = {
+                                    if (UserPreferences.isLoggedIn(context)) {
+                                        loggedInStudentId = UserPreferences.getStudentId(context)
+                                        loggedInStudentName = UserPreferences.getStudentName(context)
+                                        currentScreen = AppScreen.MAIN
+                                    } else {
+                                        currentScreen = AppScreen.LOGIN
+                                    }
+                                }
                             )
                         }
                         AppScreen.LOGIN -> {
                             LoginScreen(
                                 onLoginSuccess = { studentId, studentName ->
+                                    UserPreferences.saveUserSession(context, studentId, studentName)
                                     loggedInStudentId = studentId
                                     loggedInStudentName = studentName
                                     currentScreen = AppScreen.MAIN
@@ -54,7 +66,10 @@ class MainActivity : ComponentActivity() {
                             DashboardScreen(
                                 studentId = loggedInStudentId,
                                 studentName = loggedInStudentName,
-                                onLogoutClick = { currentScreen = AppScreen.LOGIN }
+                                onLogoutClick = {
+                                    UserPreferences.clearSession(context)
+                                    currentScreen = AppScreen.LOGIN
+                                }
                             )
                         }
                     }
