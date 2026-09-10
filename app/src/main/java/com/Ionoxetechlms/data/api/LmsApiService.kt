@@ -59,4 +59,9 @@ interface LmsApiService {
         @Query("student_id") studentId: Int,
         @Query("assignment_id") assignmentId: Int
     ): Response<AssignmentDetailResponse>
+
+    @POST("api/submit_assignment")
+    suspend fun submitAssignment(
+        @Body request: AssignmentSubmitRequest
+    ): Response<AssignmentSubmitResponse>
 }

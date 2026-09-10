@@ -137,6 +137,25 @@ data class AssignmentDetailResponse(
 )
 
 /**
+ * Assignment Submit Request Payload
+ */
+data class AssignmentSubmitRequest(
+    @SerializedName("student_id") val studentId: Int,
+    @SerializedName("assignment_id") val assignmentId: Int,
+    @SerializedName("answers") val answers: Map<String, String> = emptyMap()
+)
+
+/**
+ * Assignment Submit Response Payload
+ */
+data class AssignmentSubmitResponse(
+    @SerializedName("status") val status: String,
+    @SerializedName("message") val message: String,
+    @SerializedName("obtained_marks") val obtainedMarks: Int = 0,
+    @SerializedName("total_marks") val totalMarks: Int = 100
+)
+
+/**
  * Complete Dashboard Data Response Payload
  */
 data class DashboardResponse(
