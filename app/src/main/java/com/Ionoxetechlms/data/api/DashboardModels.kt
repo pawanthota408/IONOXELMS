@@ -50,6 +50,55 @@ data class JobItem(
 )
 
 /**
+ * Attendance Record Item
+ */
+data class AttendanceRecord(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("course_name") val courseName: String? = null,
+    @SerializedName("date") val date: String? = null,
+    @SerializedName("day") val day: String? = null,
+    @SerializedName("status") val status: String? = "present"
+)
+
+/**
+ * Attendance Response Payload
+ */
+data class AttendanceResponse(
+    @SerializedName("status") val status: String,
+    @SerializedName("total_classes") val totalClasses: Int = 0,
+    @SerializedName("attended_classes") val attendedClasses: Int = 0,
+    @SerializedName("absent_classes") val absentClasses: Int = 0,
+    @SerializedName("attendance_percentage") val attendancePercentage: Int = 100,
+    @SerializedName("is_compliant") val isCompliant: Boolean = true,
+    @SerializedName("records") val records: List<AttendanceRecord> = emptyList()
+)
+
+/**
+ * Assignment Item Model
+ */
+data class AssignmentItem(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("title") val title: String? = null,
+    @SerializedName("course_name") val courseName: String? = null,
+    @SerializedName("description") val description: String? = null,
+    @SerializedName("due_date") val dueDate: String? = null,
+    @SerializedName("total_marks") val totalMarks: Int = 100,
+    @SerializedName("obtained_marks") val obtainedMarks: Int? = null,
+    @SerializedName("submitted_at") val submittedAt: String? = null,
+    @SerializedName("file_path") val filePath: String? = null,
+    @SerializedName("state") val state: String = "open"
+)
+
+/**
+ * Assignment List Response Payload
+ */
+data class AssignmentListResponse(
+    @SerializedName("status") val status: String,
+    @SerializedName("total") val total: Int = 0,
+    @SerializedName("assignments") val assignments: List<AssignmentItem> = emptyList()
+)
+
+/**
  * Complete Dashboard Data Response Payload
  */
 data class DashboardResponse(

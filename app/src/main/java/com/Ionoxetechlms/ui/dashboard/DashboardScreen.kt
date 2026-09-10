@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material.icons.filled.Book
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Help
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MenuBook
@@ -78,6 +79,8 @@ import com.Ionoxetechlms.data.api.DashboardResponse
 import com.Ionoxetechlms.data.api.JobItem
 import com.Ionoxetechlms.data.api.NextClass
 import com.Ionoxetechlms.data.api.ScheduleItem
+import com.Ionoxetechlms.ui.assignments.AssignmentsScreen
+import com.Ionoxetechlms.ui.attendance.AttendanceScreen
 import com.Ionoxetechlms.ui.courses.MyCoursesScreen
 import com.Ionoxetechlms.ui.theme.IONOXELMSTheme
 import com.Ionoxetechlms.ui.theme.ProfessionalGreen
@@ -239,6 +242,18 @@ fun DashboardContent(
                 when (selectedTab) {
                     1 -> {
                         MyCoursesScreen(
+                            studentId = studentId,
+                            studentName = dashboardData.studentName ?: "Student"
+                        )
+                    }
+                    2 -> {
+                        AssignmentsScreen(
+                            studentId = studentId,
+                            studentName = dashboardData.studentName ?: "Student"
+                        )
+                    }
+                    3 -> {
+                        AttendanceScreen(
                             studentId = studentId,
                             studentName = dashboardData.studentName ?: "Student"
                         )
@@ -874,8 +889,8 @@ fun DashboardBottomNavigation(
         NavigationBarItem(
             selected = selectedTab == 3,
             onClick = { onTabSelected(3) },
-            icon = { Icon(Icons.Default.Work, contentDescription = "Jobs") },
-            label = { Text("Jobs", fontSize = 10.sp) },
+            icon = { Icon(Icons.Default.CalendarMonth, contentDescription = "Attendance") },
+            label = { Text("Attendance", fontSize = 10.sp) },
             colors = NavigationBarItemDefaults.colors(selectedIconColor = Color(0xFFF97316), selectedTextColor = Color(0xFFF97316))
         )
         NavigationBarItem(
