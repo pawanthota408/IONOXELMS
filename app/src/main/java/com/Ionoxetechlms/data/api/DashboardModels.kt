@@ -195,9 +195,12 @@ data class CertificateResponse(
  */
 data class LessonItem(
     @SerializedName("id") val id: Int = 0,
+    @SerializedName("course_id") val courseId: Int = 0,
     @SerializedName("title") val title: String? = null,
+    @SerializedName("description") val description: String? = null,
     @SerializedName("video_url") val videoUrl: String? = null,
-    @SerializedName("description") val description: String? = null
+    @SerializedName("lesson_order") val lessonOrder: Int = 0,
+    @SerializedName("batch_id") val batchId: Int? = null
 )
 
 /**

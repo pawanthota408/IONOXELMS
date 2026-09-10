@@ -1,4 +1,5 @@
 <?php
+
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
@@ -9,7 +10,13 @@ if ($_SERVER["REQUEST_METHOD"] === "OPTIONS") {
     exit;
 }
 
-date_default_timezone_set('Asia/Kolkata');
+date_default_timezone_set("Asia/Kolkata");
+
+/*
+|--------------------------------------------------------------------------
+| CONFIG
+|--------------------------------------------------------------------------
+*/
 
 $configPaths = [
     __DIR__ . "/../config.php",
@@ -18,6 +25,7 @@ $configPaths = [
 ];
 
 $configLoaded = false;
+
 foreach ($configPaths as $path) {
     if (file_exists($path)) {
         require_once $path;
@@ -26,100 +34,252 @@ foreach ($configPaths as $path) {
     }
 }
 
-if (!$configLoaded || !isset($conn) || !($conn instanceof mysqli)) {
+if (
+    !$configLoaded ||
+    !isset($conn) ||
+    !($conn instanceof mysqli)
+) {
     http_response_code(500);
-    echo json_encode(["status" => "error", "message" => "Database connection failed"]);
+
+    echo json_encode([
+        "status" => "error",
+        "message" => "Database connection failed"
+    ]);
+
     exit;
 }
 
-$student_id = isset($_GET['student_id']) ? intval($_GET['student_id']) : (isset($_POST['student_id']) ? intval($_POST['student_id']) : 0);
-$course_id  = isset($_GET['course_id']) ? intval($_GET['course_id']) : (isset($_POST['course_id']) ? intval($_POST['course_id']) : (isset($_GET['id']) ? intval($_GET['id']) : 0));
+/*
+|--------------------------------------------------------------------------
+| INPUT
+|--------------------------------------------------------------------------
+*/
+
+$student_id = isset($_GET["student_id"])
+    ? intval($_GET["student_id"])
+    : (
+        isset($_POST["student_id"])
+            ? intval($_POST["student_id"])
+            : 0
+    );
+
+$course_id = isset($_GET["course_id"])
+    ? intval($_GET["course_id"])
+    : (
+        isset($_POST["course_id"])
+            ? intval($_POST["course_id"])
+            : (
+                isset($_GET["id"])
+                    ? intval($_GET["id"])
+                    : 0
+            )
+    );
+
+/*
+|--------------------------------------------------------------------------
+| COURSE ID REQUIRED
+|--------------------------------------------------------------------------
+*/
 
 if ($course_id <= 0) {
-    $course_id = 1;
+
+    http_response_code(400);
+
+    echo json_encode([
+        "status" => "error",
+        "message" => "Valid course_id is required"
+    ]);
+
+    exit;
 }
 
-// Fetch Course
-$stmt = $conn->prepare("SELECT id, title, description, thumbnail FROM courses WHERE id = ? LIMIT 1");
-$course = null;
-if ($stmt) {
-    $stmt->bind_param('i', $course_id);
-    $stmt->execute();
-    $course = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
+/*
+|--------------------------------------------------------------------------
+| FETCH COURSE
+|--------------------------------------------------------------------------
+*/
+
+$stmt = $conn->prepare("
+    SELECT
+        id,
+        title,
+        description,
+        thumbnail
+    FROM courses
+    WHERE id = ?
+    LIMIT 1
+");
+
+if (!$stmt) {
+
+    http_response_code(500);
+
+    echo json_encode([
+        "status" => "error",
+        "message" => "Failed to prepare course query",
+        "error" => $conn->error
+    ]);
+
+    exit;
 }
+
+$stmt->bind_param("i", $course_id);
+
+if (!$stmt->execute()) {
+
+    http_response_code(500);
+
+    echo json_encode([
+        "status" => "error",
+        "message" => "Failed to fetch course",
+        "error" => $stmt->error
+    ]);
+
+    exit;
+}
+
+$result = $stmt->get_result();
+
+$course = $result->fetch_assoc();
+
+$stmt->close();
+
+/*
+|--------------------------------------------------------------------------
+| COURSE NOT FOUND
+|--------------------------------------------------------------------------
+*/
 
 if (!$course) {
-    // If course 1 not found, fetch first available course
-    $stmt_fallback = $conn->query("SELECT id, title, description, thumbnail FROM courses ORDER BY id ASC LIMIT 1");
-    if ($stmt_fallback && $row_f = $stmt_fallback->fetch_assoc()) {
-        $course = $row_f;
-        $course_id = intval($course['id']);
-    }
+
+    http_response_code(404);
+
+    echo json_encode([
+        "status" => "error",
+        "message" => "Course not found",
+        "course_id" => $course_id
+    ]);
+
+    exit;
 }
 
-if (!$course) {
-    $course = [
-        "id" => 1,
-        "title" => "Artificial Intelligence & Machine Learning",
-        "description" => "Master Artificial Intelligence & Machine Learning algorithms.",
-        "thumbnail" => "https://iili.io/fViYYl9.png"
-    ];
-}
+/*
+|--------------------------------------------------------------------------
+| FETCH LESSONS
+|--------------------------------------------------------------------------
+*/
 
-// Fetch Lessons List safely by course_id
 $lessons = [];
-$chk_l = $conn->query("SHOW TABLES LIKE 'lessons'");
-if ($chk_l && $chk_l->num_rows > 0) {
-    $stmt_l = $conn->prepare("SELECT id, title, video_url, description FROM lessons WHERE course_id = ? ORDER BY id ASC");
-    if ($stmt_l) {
-        $stmt_l->bind_param('i', $course_id);
-        $stmt_l->execute();
-        $res_l = $stmt_l->get_result();
-        while ($row = $res_l->fetch_assoc()) {
-            $lessons[] = [
-                "id"          => (int)$row['id'],
-                "title"       => $row['title'] ?? 'Lesson',
-                "video_url"   => $row['video_url'] ?? '',
-                "description" => $row['description'] ?? ''
-            ];
-        }
-        $stmt_l->close();
-    }
+
+$stmtLessons = $conn->prepare("
+    SELECT
+        id,
+        course_id,
+        title,
+        description,
+        video_url,
+        lesson_order,
+        batch_id
+    FROM lessons
+    WHERE course_id = ?
+    ORDER BY
+        CASE
+            WHEN lesson_order IS NULL THEN 999999
+            ELSE lesson_order
+        END ASC,
+        id ASC
+");
+
+if (!$stmtLessons) {
+
+    http_response_code(500);
+
+    echo json_encode([
+        "status" => "error",
+        "message" => "Failed to prepare lessons query",
+        "error" => $conn->error
+    ]);
+
+    exit;
 }
 
-// Fallback Mock Lessons if no lessons in table for this course
-if (empty($lessons)) {
-    $lessons = [
-        [
-            "id"          => 101,
-            "title"       => "Lesson 1: Introduction & Environment Setup",
-            "video_url"   => "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-            "description" => "Welcome to the course! In this lesson we will set up the development environment, install tools, and understand the core curriculum."
-        ],
-        [
-            "id"          => 102,
-            "title"       => "Lesson 2: Core Concepts & Architecture",
-            "video_url"   => "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-            "description" => "Learn fundamental architecture, basic syntax, component hierarchies, and best practices."
-        ],
-        [
-            "id"          => 103,
-            "title"       => "Lesson 3: Hands-On Practical Project",
-            "video_url"   => "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-            "description" => "Build a real-world hands-on project step-by-step applying concepts learned in previous modules."
-        ]
+$stmtLessons->bind_param(
+    "i",
+    $course_id
+);
+
+if (!$stmtLessons->execute()) {
+
+    http_response_code(500);
+
+    echo json_encode([
+        "status" => "error",
+        "message" => "Failed to fetch lessons",
+        "error" => $stmtLessons->error
+    ]);
+
+    exit;
+}
+
+$resultLessons = $stmtLessons->get_result();
+
+while ($row = $resultLessons->fetch_assoc()) {
+
+    $lessons[] = [
+        "id" => (int)$row["id"],
+
+        "course_id" => (int)$row["course_id"],
+
+        "title" =>
+            $row["title"] ?? "Lesson",
+
+        "description" =>
+            $row["description"] ?? "",
+
+        "video_url" =>
+            $row["video_url"] ?? "",
+
+        "lesson_order" =>
+            isset($row["lesson_order"])
+                ? (int)$row["lesson_order"]
+                : 0,
+
+        "batch_id" =>
+            isset($row["batch_id"])
+                ? (int)$row["batch_id"]
+                : null
     ];
 }
+
+$stmtLessons->close();
+
+/*
+|--------------------------------------------------------------------------
+| SUCCESS RESPONSE
+|--------------------------------------------------------------------------
+*/
 
 echo json_encode([
-    "status"        => "success",
-    "course_id"     => (int)$course['id'],
-    "title"         => $course['title'] ?? 'Course Lessons',
-    "description"   => $course['description'] ?? '',
-    "thumbnail"     => $course['thumbnail'] ?? '',
-    "total_lessons" => count($lessons),
-    "lessons"       => $lessons
+    "status" => "success",
+
+    "course_id" =>
+        (int)$course["id"],
+
+    "title" =>
+        $course["title"] ?? "",
+
+    "description" =>
+        $course["description"] ?? "",
+
+    "thumbnail" =>
+        $course["thumbnail"] ?? "",
+
+    "total_lessons" =>
+        count($lessons),
+
+    "lessons" =>
+        $lessons
 ]);
+
 exit;
 ?>
