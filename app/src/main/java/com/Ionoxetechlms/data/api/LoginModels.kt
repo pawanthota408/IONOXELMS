@@ -2,7 +2,7 @@ package com.Ionoxetechlms.data.api
 
 import com.google.gson.annotations.SerializedName
 
- /**
+/**
  * Login Request Payload
  */
 data class LoginRequest(
@@ -21,6 +21,7 @@ data class Student(
     @SerializedName("phone") val phone: String? = null,
     @SerializedName("batch_id") val batchId: String? = null,
     @SerializedName("ca_id") val caId: String? = null,
+    @SerializedName("created_at") val createdAt: String? = null,
     @SerializedName("role") val role: String? = "student"
 )
 
