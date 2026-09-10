@@ -101,6 +101,42 @@ data class AssignmentListResponse(
 )
 
 /**
+ * Individual Question Detail Item
+ */
+data class QuestionDetail(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("question") val question: String? = null,
+    @SerializedName("type") val type: String = "mcq",
+    @SerializedName("marks") val marks: Int = 10,
+    @SerializedName("options") val options: Map<String, String> = emptyMap(),
+    @SerializedName("correct_option") val correctOption: String? = null,
+    @SerializedName("student_answer") val studentAnswer: String? = null,
+    @SerializedName("awarded_marks") val awardedMarks: Float? = null,
+    @SerializedName("state") val state: String = "none"
+)
+
+/**
+ * Assignment Detail Review Response Payload
+ */
+data class AssignmentDetailResponse(
+    @SerializedName("status") val status: String,
+    @SerializedName("assignment_id") val assignmentId: Int = 0,
+    @SerializedName("title") val title: String? = null,
+    @SerializedName("course_name") val courseName: String? = null,
+    @SerializedName("total_marks") val totalMarks: Int = 100,
+    @SerializedName("obtained_marks") val obtainedMarks: Int? = null,
+    @SerializedName("percentage") val percentage: Int? = null,
+    @SerializedName("submitted_at") val submittedAt: String? = null,
+    @SerializedName("file_path") val filePath: String? = null,
+    @SerializedName("resolved_type") val resolvedType: String = "mcq",
+    @SerializedName("submitted") val submitted: Boolean = false,
+    @SerializedName("correct_count") val correctCount: Int = 0,
+    @SerializedName("wrong_count") val wrongCount: Int = 0,
+    @SerializedName("skipped_count") val skippedCount: Int = 0,
+    @SerializedName("questions") val questions: List<QuestionDetail> = emptyList()
+)
+
+/**
  * Complete Dashboard Data Response Payload
  */
 data class DashboardResponse(

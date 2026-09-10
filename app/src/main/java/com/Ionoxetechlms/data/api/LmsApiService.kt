@@ -53,4 +53,10 @@ interface LmsApiService {
     suspend fun getAssignments(
         @Query("student_id") studentId: Int
     ): Response<AssignmentListResponse>
+
+    @GET("api/assignment_detail")
+    suspend fun getAssignmentDetail(
+        @Query("student_id") studentId: Int,
+        @Query("assignment_id") assignmentId: Int
+    ): Response<AssignmentDetailResponse>
 }

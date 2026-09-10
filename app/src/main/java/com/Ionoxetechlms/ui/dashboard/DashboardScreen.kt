@@ -5,7 +5,6 @@ import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -95,7 +94,8 @@ import kotlinx.coroutines.launch
 fun DashboardScreen(
     studentId: Int = 999,
     studentName: String = "Student",
-    onLogoutClick: () -> Unit = {}
+    onLogoutClick: () -> Unit = {},
+    onAssignmentClick: (Int) -> Unit = {}
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -129,6 +129,7 @@ fun DashboardScreen(
         selectedTab = selectedTab,
         onTabSelected = { selectedTab = it },
         onLogoutClick = onLogoutClick,
+        onAssignmentClick = onAssignmentClick,
         onJoinMeetingClick = { link ->
             if (!link.isNullOrBlank()) {
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(link))
@@ -150,6 +151,7 @@ fun DashboardContent(
     selectedTab: Int = 0,
     onTabSelected: (Int) -> Unit = {},
     onLogoutClick: () -> Unit = {},
+    onAssignmentClick: (Int) -> Unit = {},
     onJoinMeetingClick: (String?) -> Unit = {}
 ) {
     Scaffold(
@@ -249,7 +251,8 @@ fun DashboardContent(
                     2 -> {
                         AssignmentsScreen(
                             studentId = studentId,
-                            studentName = dashboardData.studentName ?: "Student"
+                            studentName = dashboardData.studentName ?: "Student",
+                            onAssignmentClick = onAssignmentClick
                         )
                     }
                     3 -> {
