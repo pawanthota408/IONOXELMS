@@ -75,9 +75,13 @@ class MainActivity : ComponentActivity() {
                                     UserPreferences.clearSession(context)
                                     currentScreen = AppScreen.LOGIN
                                 },
-                                onAssignmentClick = { assignmentId ->
+                                onAssignmentClick = { assignmentId, state ->
                                     selectedAssignmentId = assignmentId
-                                    currentScreen = AppScreen.ASSIGNMENT_ATTEMPT
+                                    if (state.lowercase() == "open") {
+                                        currentScreen = AppScreen.ASSIGNMENT_ATTEMPT
+                                    } else {
+                                        currentScreen = AppScreen.ASSIGNMENT_DETAIL
+                                    }
                                 }
                             )
                         }

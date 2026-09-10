@@ -95,7 +95,7 @@ fun DashboardScreen(
     studentId: Int = 999,
     studentName: String = "Student",
     onLogoutClick: () -> Unit = {},
-    onAssignmentClick: (Int) -> Unit = {}
+    onAssignmentClick: (Int, String) -> Unit = { _, _ -> }
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -151,7 +151,7 @@ fun DashboardContent(
     selectedTab: Int = 0,
     onTabSelected: (Int) -> Unit = {},
     onLogoutClick: () -> Unit = {},
-    onAssignmentClick: (Int) -> Unit = {},
+    onAssignmentClick: (Int, String) -> Unit = { _, _ -> },
     onJoinMeetingClick: (String?) -> Unit = {}
 ) {
     Scaffold(

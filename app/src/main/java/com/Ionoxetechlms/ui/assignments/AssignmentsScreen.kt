@@ -66,13 +66,16 @@ val PurpleBg = Color(0xFFF5F3FF)
 
 /**
  * Assignments & Tasks Screen for Ionoxetech LMS Application
- * Synced with web 'assignments.php' layout and REST API
+ * Enforces business rules:
+ * 1. Already submitted -> View result only
+ * 2. Not submitted & due date active -> Attempt assignment
+ * 3. Not submitted & due date passed -> View correct answers (0 Marks), attempt blocked
  */
 @Composable
 fun AssignmentsScreen(
     studentId: Int = 2,
     studentName: String = "Student",
-    onAssignmentClick: (Int) -> Unit = {}
+    onAssignmentClick: (Int, String) -> Unit = { _, _ -> }
 ) {
     val context = LocalContext.current
     var selectedTab by remember { mutableIntStateOf(0) }
@@ -194,7 +197,7 @@ fun AssignmentsScreen(
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "Sorted newest first • Schedule-gated • Auto-expires after due date",
+                                    text = "Sorted newest first • Active deadline allows attempts • Overdue shows answers (0 Marks)",
                                     fontSize = 12.sp,
                                     color = LightMuted
                                 )
@@ -293,7 +296,7 @@ fun AssignmentsScreen(
                                 item = assignment,
                                 onClick = {
                                     if (assignment.id > 0) {
-                                        onAssignmentClick(assignment.id)
+                                        onAssignmentClick(assignment.id, assignment.state.lowercase())
                                     } else {
                                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://ionox.in/lms/student/assignments.php"))
                                         context.startActivity(intent)
@@ -402,7 +405,7 @@ fun AssignmentCard(
                     Text(
                         text = when (state) {
                             "submitted" -> "SUBMITTED"
-                            "overdue" -> "EXPIRED"
+                            "overdue" -> "EXPIRED (0 MARKS)"
                             "locked" -> "LOCKED"
                             else -> "LIVE NOW"
                         },
@@ -468,23 +471,23 @@ fun AssignmentCard(
                 )
 
                 Text(
-                    text = "Marks: ${item.obtainedMarks ?: "--"} / ${item.totalMarks}",
+                    text = if (isSubmitted) "Marks: ${item.obtainedMarks ?: 0} / ${item.totalMarks}" else if (isExpired) "Score: 0 / ${item.totalMarks}" else "Total: ${item.totalMarks} Marks",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    color = NavyDark
+                    color = if (isExpired && !isSubmitted) Color(0xFFDC2626) else NavyDark
                 )
             }
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Footer Button
+            // Action Button Rule Enforcer
             Button(
                 onClick = { onClick() },
                 enabled = !isLocked,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = when {
                         isSubmitted -> ProfessionalGreen
-                        isExpired -> Color(0xFF475569)
+                        isExpired -> Color(0xFFDC2626)
                         isLocked -> Color(0xFF94A3B8)
                         isProject -> PurpleAccent
                         else -> BrandOrange
@@ -495,11 +498,11 @@ fun AssignmentCard(
             ) {
                 Text(
                     text = when {
-                        isSubmitted -> "View Result"
-                        isExpired -> "View Assignment"
+                        isSubmitted -> "View My Result"
+                        isExpired -> "View Answers (0 Marks - Attempt Closed)"
                         isLocked -> "Locked"
                         isProject -> "Submit Project"
-                        else -> "Attempt Now"
+                        else -> "Attempt Assignment"
                     },
                     fontWeight = FontWeight.Bold,
                     fontSize = 12.sp,
