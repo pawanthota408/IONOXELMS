@@ -18,18 +18,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FilePresent
 import androidx.compose.material.icons.filled.Lightbulb
-import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -39,7 +35,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -72,7 +67,7 @@ val AmberBg = Color(0xFFFFFBEB)
 
 /**
  * Assignment Detail & Results Review Screen in Jetpack Compose
- * Replicates web 'assignment_view.php'
+ * Shows score hero banner, question review with correct answers, and submitted attachments
  */
 @Composable
 fun AssignmentDetailScreen(
@@ -132,6 +127,8 @@ fun AssignmentDetailScreen(
     }
 
     val data = detail ?: AssignmentDetailResponse("success")
+    val isSubmitted = data.submitted
+    val isExpired = !isSubmitted
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -163,10 +160,10 @@ fun AssignmentDetailScreen(
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = if (data.submitted) "ASSIGNMENT REVIEW" else "ASSIGNMENT PREVIEW",
+                            text = if (isSubmitted) "ASSIGNMENT REVIEW" else "EXPIRED ASSIGNMENT (0 MARKS)",
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF7A8BA5),
+                            color = if (isSubmitted) Color(0xFF7A8BA5) else Color(0xFFDC2626),
                             letterSpacing = 0.7.sp
                         )
                         Text(
@@ -195,153 +192,153 @@ fun AssignmentDetailScreen(
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     // Score Hero Banner
-                    if (data.submitted) {
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = CardDefaults.cardColors(containerColor = HeroNavy)
+                        ) {
+                            Column(modifier = Modifier.padding(20.dp)) {
+                                Text(
+                                    text = if (isSubmitted) "YOUR SCORE" else "UNATTEMPTED SCORE",
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White.copy(alpha = 0.5f),
+                                    letterSpacing = 0.8.sp
+                                )
+
+                                Row(verticalAlignment = Alignment.Bottom) {
+                                    Text(
+                                        text = if (isSubmitted) "${data.percentage ?: 0}" else "0",
+                                        fontSize = 50.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isSubmitted) Color.White else Color(0xFFFCA5A5),
+                                        lineHeight = 50.sp
+                                    )
+                                    Text(
+                                        text = "%",
+                                        fontSize = 22.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White.copy(alpha = 0.5f),
+                                        modifier = Modifier.padding(bottom = 6.dp, start = 2.dp)
+                                    )
+                                }
+
+                                Text(
+                                    text = when {
+                                        isSubmitted && (data.percentage ?: 0) >= 80 -> "🎉 Excellent work!"
+                                        isSubmitted && (data.percentage ?: 0) >= 50 -> "👍 Good effort!"
+                                        isSubmitted -> "📚 Keep practising!"
+                                        else -> "⛔ Deadline Passed — Unattempted (0 Marks)"
+                                    },
+                                    fontSize = 12.sp,
+                                    color = if (isSubmitted) Color.White.copy(alpha = 0.7f) else Color(0xFFFCA5A5),
+                                    fontWeight = FontWeight.SemiBold
+                                )
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                LinearProgressIndicator(
+                                    progress = { if (isSubmitted) ((data.percentage ?: 0) / 100f).coerceIn(0f, 1f) else 0f },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(6.dp)
+                                        .clip(RoundedCornerShape(100.dp)),
+                                    color = if (isSubmitted) ProfessionalGreen else Color(0xFFDC2626),
+                                    trackColor = Color.White.copy(alpha = 0.15f)
+                                )
+
+                                Spacer(modifier = Modifier.height(14.dp))
+                                HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("POINTS", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color.White.copy(alpha = 0.4f))
+                                    Text("${if (isSubmitted) data.obtainedMarks ?: 0 else 0} / ${data.totalMarks}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                }
+
+                                Spacer(modifier = Modifier.height(6.dp))
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("COURSE", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color.White.copy(alpha = 0.4f))
+                                    Text(data.courseName ?: "Course", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                }
+                            }
+                        }
+                    }
+
+                    // Breakdown Pills (Correct / Wrong / Skipped)
+                    if (data.resolvedType.lowercase() == "mcq" && isSubmitted) {
+                        item {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                BreakdownPill(modifier = Modifier.weight(1f), count = data.correctCount, label = "Correct", color = ProfessionalGreen, bgColor = LightGreenSoft)
+                                BreakdownPill(modifier = Modifier.weight(1f), count = data.wrongCount, label = "Wrong", color = Color(0xFFDC2626), bgColor = Color(0xFFFEF2F2))
+                                BreakdownPill(modifier = Modifier.weight(1f), count = data.skippedCount, label = "Skipped", color = AmberWarn, bgColor = AmberBg)
+                            }
+                        }
+                    }
+
+                    // Submitted File Card (Descriptive Attachment Upload)
+                    if (!data.filePath.isNullOrBlank()) {
                         item {
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(14.dp),
-                                colors = CardDefaults.cardColors(containerColor = HeroNavy)
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                border = BorderStroke(1.dp, LightBorder)
                             ) {
-                                Column(modifier = Modifier.padding(20.dp)) {
-                                    Text(
-                                        text = "YOUR SCORE",
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.White.copy(alpha = 0.5f),
-                                        letterSpacing = 0.8.sp
-                                    )
-
-                                    Row(verticalAlignment = Alignment.Bottom) {
-                                        Text(
-                                            text = "${data.percentage ?: "--"}",
-                                            fontSize = 50.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.White,
-                                            lineHeight = 50.sp
-                                        )
-                                        Text(
-                                            text = "%",
-                                            fontSize = 22.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.White.copy(alpha = 0.5f),
-                                            modifier = Modifier.padding(bottom = 6.dp, start = 2.dp)
-                                        )
-                                    }
-
-                                    Text(
-                                        text = when {
-                                            (data.percentage ?: 0) >= 80 -> "🎉 Excellent work!"
-                                            (data.percentage ?: 0) >= 50 -> "👍 Good effort!"
-                                            else -> "📚 Keep practising!"
-                                        },
-                                        fontSize = 12.sp,
-                                        color = Color.White.copy(alpha = 0.7f)
-                                    )
-
-                                    Spacer(modifier = Modifier.height(10.dp))
-
-                                    LinearProgressIndicator(
-                                        progress = { ((data.percentage ?: 0) / 100f).coerceIn(0f, 1f) },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(6.dp)
-                                            .clip(RoundedCornerShape(100.dp)),
-                                        color = ProfessionalGreen,
-                                        trackColor = Color.White.copy(alpha = 0.15f)
-                                    )
-
-                                    Spacer(modifier = Modifier.height(14.dp))
-                                    HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
-                                    Spacer(modifier = Modifier.height(12.dp))
-
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Text("POINTS", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color.White.copy(alpha = 0.4f))
-                                        Text("${data.obtainedMarks ?: 0} / ${data.totalMarks}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                                    }
-
-                                    Spacer(modifier = Modifier.height(6.dp))
-
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Text("COURSE", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color.White.copy(alpha = 0.4f))
-                                        Text(data.courseName ?: "Course", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                                    }
-                                }
-                            }
-                        }
-
-                        // Breakdown Pills (Correct / Wrong / Skipped)
-                        if (data.resolvedType.lowercase() == "mcq") {
-                            item {
                                 Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    BreakdownPill(modifier = Modifier.weight(1f), count = data.correctCount, label = "Correct", color = ProfessionalGreen, bgColor = LightGreenSoft)
-                                    BreakdownPill(modifier = Modifier.weight(1f), count = data.wrongCount, label = "Wrong", color = Color(0xFFDC2626), bgColor = Color(0xFFFEF2F2))
-                                    BreakdownPill(modifier = Modifier.weight(1f), count = data.skippedCount, label = "Skipped", color = AmberWarn, bgColor = AmberBg)
-                                }
-                            }
-                        }
-
-                        // Submitted File Card
-                        if (!data.filePath.isNullOrBlank()) {
-                            item {
-                                Card(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                                    border = BorderStroke(1.dp, LightBorder)
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(14.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(14.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        modifier = Modifier.weight(1f),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Row(
-                                            modifier = Modifier.weight(1f),
-                                            verticalAlignment = Alignment.CenterVertically
+                                        Box(
+                                            modifier = Modifier
+                                                .size(38.dp)
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(OrangeBg),
+                                            contentAlignment = Alignment.Center
                                         ) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(38.dp)
-                                                    .clip(RoundedCornerShape(8.dp))
-                                                    .background(OrangeBg),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.FilePresent,
-                                                    contentDescription = null,
-                                                    tint = BrandOrange,
-                                                    modifier = Modifier.size(20.dp)
-                                                )
-                                            }
-                                            Spacer(modifier = Modifier.width(10.dp))
-                                            Column {
-                                                Text("Submitted Work File", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = HeroNavy)
-                                                Text("Download or open attachment", fontSize = 10.sp, color = Color(0xFF7A8BA5))
-                                            }
+                                            Icon(
+                                                imageVector = Icons.Default.FilePresent,
+                                                contentDescription = null,
+                                                tint = BrandOrange,
+                                                modifier = Modifier.size(20.dp)
+                                            )
                                         }
+                                        Spacer(modifier = Modifier.width(10.dp))
+                                        Column {
+                                            Text("Submitted Attachment File", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = HeroNavy)
+                                            Text("Tap to view or download file", fontSize = 10.sp, color = Color(0xFF7A8BA5))
+                                        }
+                                    }
 
-                                        Button(
-                                            onClick = {
-                                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(data.filePath))
-                                                context.startActivity(intent)
-                                            },
-                                            colors = ButtonDefaults.buttonColors(containerColor = ProfessionalGreen),
-                                            shape = RoundedCornerShape(8.dp)
-                                        ) {
-                                            Icon(Icons.Default.Download, contentDescription = "Download", tint = Color.White, modifier = Modifier.size(14.dp))
-                                            Spacer(modifier = Modifier.width(4.dp))
-                                            Text("Open", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                        }
+                                    Button(
+                                        onClick = {
+                                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(data.filePath))
+                                            context.startActivity(intent)
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = ProfessionalGreen),
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Icon(Icons.Default.Download, contentDescription = "Download", tint = Color.White, modifier = Modifier.size(14.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Open File", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                     }
                                 }
                             }
@@ -351,7 +348,7 @@ fun AssignmentDetailScreen(
                     // Questions Section Label
                     item {
                         Text(
-                            text = "Questions (${data.questions.size} Total)",
+                            text = if (isSubmitted) "Questions Review (${data.questions.size} Total)" else "Correct Answers Review (${data.questions.size} Total)",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
                             color = HeroNavy
@@ -360,7 +357,7 @@ fun AssignmentDetailScreen(
 
                     // Question Review List
                     itemsIndexed(data.questions) { index, q ->
-                        QuestionReviewCard(index = index + 1, q = q, isSubmitted = data.submitted)
+                        QuestionReviewCard(index = index + 1, q = q, isSubmitted = isSubmitted)
                     }
                 }
             }
@@ -410,9 +407,9 @@ fun QuestionReviewCard(
         border = BorderStroke(
             1.dp,
             when {
-                isCorrect -> ProfessionalGreen
-                isWrong -> Color(0xFFDC2626)
-                isSkipped -> AmberWarn
+                isSubmitted && isCorrect -> ProfessionalGreen
+                isSubmitted && isWrong -> Color(0xFFDC2626)
+                isSubmitted && isSkipped -> AmberWarn
                 else -> LightBorder
             }
         )
@@ -464,11 +461,25 @@ fun QuestionReviewCard(
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                             )
                         }
+                    } else {
+                        Surface(
+                            shape = RoundedCornerShape(100.dp),
+                            color = Color(0xFFFEF2F2),
+                            border = BorderStroke(1.dp, Color(0x33DC2626))
+                        ) {
+                            Text(
+                                text = "EXPIRED (0 MARKS)",
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFDC2626),
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
+                        }
                     }
                 }
 
                 Text(
-                    text = "${q.marks} pts",
+                    text = "${if (isSubmitted) (q.awardedMarks?.toInt() ?: 0) else 0} / ${q.marks} pts",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = HeroNavy
@@ -483,27 +494,25 @@ fun QuestionReviewCard(
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 color = HeroNavy,
-                lineHeight = 20.sp
+                lineHeight = 22.sp
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Options List
+            // Options List (ALWAYS HIGHLIGHT CORRECT OPTION IN GREEN)
             q.options.forEach { (key, optionText) ->
                 val isCorrectOption = key.equals(q.correctOption, ignoreCase = true)
-                val isStudentSelected = key.equals(q.studentAnswer, ignoreCase = true)
+                val isStudentSelected = isSubmitted && key.equals(q.studentAnswer, ignoreCase = true)
 
                 val optionBg = when {
-                    isSubmitted && isStudentSelected && isCorrectOption -> LightGreenSoft
-                    isSubmitted && isStudentSelected && !isCorrectOption -> Color(0xFFFEF2F2)
-                    isSubmitted && isCorrectOption -> LightGreenSoft
+                    isCorrectOption -> LightGreenSoft
+                    isStudentSelected && !isCorrectOption -> Color(0xFFFEF2F2)
                     else -> Color(0xFFF8F9FC)
                 }
 
                 val optionBorder = when {
-                    isSubmitted && isStudentSelected && isCorrectOption -> ProfessionalGreen
-                    isSubmitted && isStudentSelected && !isCorrectOption -> Color(0xFFDC2626)
-                    isSubmitted && isCorrectOption -> ProfessionalGreen
+                    isCorrectOption -> ProfessionalGreen
+                    isStudentSelected && !isCorrectOption -> Color(0xFFDC2626)
                     else -> LightBorder
                 }
 
@@ -524,8 +533,8 @@ fun QuestionReviewCard(
                         Surface(
                             shape = RoundedCornerShape(6.dp),
                             color = when {
-                                isSubmitted && isCorrectOption -> ProfessionalGreen
-                                isSubmitted && isStudentSelected -> Color(0xFFDC2626)
+                                isCorrectOption -> ProfessionalGreen
+                                isStudentSelected && !isCorrectOption -> Color(0xFFDC2626)
                                 else -> Color.White
                             },
                             border = BorderStroke(1.dp, LightBorder)
@@ -534,7 +543,7 @@ fun QuestionReviewCard(
                                 text = key,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isSubmitted && (isCorrectOption || isStudentSelected)) Color.White else Color(0xFF7A8BA5),
+                                color = if (isCorrectOption || isStudentSelected) Color.White else Color(0xFF7A8BA5),
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                             )
                         }
@@ -544,21 +553,22 @@ fun QuestionReviewCard(
                         Text(
                             text = optionText,
                             fontSize = 13.sp,
-                            color = HeroNavy,
+                            fontWeight = if (isCorrectOption) FontWeight.Bold else FontWeight.Normal,
+                            color = if (isCorrectOption) ProfessionalGreen else HeroNavy,
                             modifier = Modifier.weight(1f)
                         )
 
-                        if (isSubmitted && isCorrectOption) {
+                        if (isCorrectOption) {
                             Icon(Icons.Default.Check, contentDescription = "Correct", tint = ProfessionalGreen, modifier = Modifier.size(16.dp))
-                        } else if (isSubmitted && isStudentSelected && !isCorrectOption) {
+                        } else if (isStudentSelected) {
                             Icon(Icons.Default.Cancel, contentDescription = "Wrong", tint = Color(0xFFDC2626), modifier = Modifier.size(16.dp))
                         }
                     }
                 }
             }
 
-            // Correct Option Callout (if student answered wrong or skipped)
-            if (isSubmitted && !q.correctOption.isNullOrBlank() && (!isCorrect)) {
+            // Correct Option Callout
+            if (!q.correctOption.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Surface(
                     shape = RoundedCornerShape(8.dp),

@@ -2,6 +2,7 @@ package com.Ionoxetechlms.ui.dashboard
 
 import android.content.Intent
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -103,6 +104,11 @@ fun DashboardScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
     var isLoading by remember { mutableStateOf(true) }
     var dashboardData by remember { mutableStateOf<DashboardResponse?>(null) }
+
+    // 1-step back navigation handler: when on tabs 1..4, back key returns to Home (Tab 0)
+    BackHandler(enabled = selectedTab != 0) {
+        selectedTab = 0
+    }
 
     // Fetch live dashboard data from API
     LaunchedEffect(studentId) {

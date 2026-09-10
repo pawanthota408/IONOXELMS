@@ -3,7 +3,6 @@ package com.Ionoxetechlms.ui.courses
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -26,14 +25,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
@@ -49,13 +46,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.Ionoxetechlms.R
 import com.Ionoxetechlms.data.api.ApiClient
 import com.Ionoxetechlms.data.api.CourseItem
 import com.Ionoxetechlms.data.api.DashboardResponse
@@ -71,7 +66,7 @@ val PageBg = Color(0xFFF1F3F8)
 
 /**
  * My Courses Screen for Ionoxetech LMS App
- * Replicates the Web 'mycourses.php' layout with live search filter, course library, and stats strip
+ * Embedded directly inside Dashboard scaffold without duplicate top bar
  */
 @Composable
 fun MyCoursesScreen(
@@ -137,268 +132,223 @@ fun MyCoursesScreen(
         modifier = Modifier.fillMaxSize(),
         color = PageBg
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-
-            // Top Header Bar
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = Color.White,
-                shadowElevation = 2.dp
+        if (isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 18.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Image(
-                            painter = painterResource(id = R.drawable.in_logo),
-                            contentDescription = "Logo",
-                            modifier = Modifier.size(28.dp)
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
+                CircularProgressIndicator(color = ProfessionalGreen)
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Page Title Section
+                item {
+                    Column {
                         Text(
-                            text = "My Courses",
-                            fontSize = 17.sp,
+                            text = "Course Library",
+                            fontSize = 22.sp,
                             fontWeight = FontWeight.Bold,
                             color = NavyDark
                         )
-                    }
-
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box {
-                            IconButton(onClick = {}) {
-                                Icon(
-                                    imageVector = Icons.Default.Notifications,
-                                    contentDescription = "Notifications",
-                                    tint = Color(0xFF536275)
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = ProfessionalGreen)
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    // Page Title Section
-                    item {
-                        Column {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = "Course Library",
-                                fontSize = 22.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = NavyDark
+                                text = "You are enrolled in ",
+                                fontSize = 13.sp,
+                                color = Color(0xFF7A8BA5)
                             )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = "You are enrolled in ",
-                                    fontSize = 13.sp,
-                                    color = Color(0xFF7A8BA5)
-                                )
-                                Text(
-                                    text = "${allCourses.size} courses.",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = BrandOrange
-                                )
-                            }
+                            Text(
+                                text = "${allCourses.size} courses.",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = BrandOrange
+                            )
                         }
                     }
+                }
 
-                    // Search Input
-                    item {
-                        OutlinedTextField(
-                            value = searchQuery,
-                            onValueChange = { searchQuery = it },
-                            placeholder = { Text("Search courses…", fontSize = 13.sp, color = Color(0xFF7A8BA5)) },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Search,
-                                    contentDescription = "Search",
-                                    tint = Color(0xFF7A8BA5)
-                                )
-                            },
-                            singleLine = true,
+                // Search Input
+                item {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        placeholder = { Text("Search courses…", fontSize = 13.sp, color = Color(0xFF7A8BA5)) },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = "Search",
+                                tint = Color(0xFF7A8BA5)
+                            )
+                        },
+                        singleLine = true,
+                        shape = RoundedCornerShape(10.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White,
+                            focusedBorderColor = BrandOrange,
+                            unfocusedBorderColor = Color(0xFFE8ECF4),
+                            cursorColor = BrandOrange
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                // Stats Strip Row
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        // Enrolled Courses Card
+                        Card(
+                            modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(10.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = Color.White,
-                                unfocusedContainerColor = Color.White,
-                                focusedBorderColor = BrandOrange,
-                                unfocusedBorderColor = Color(0xFFE8ECF4),
-                                cursorColor = BrandOrange
-                            ),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-
-                    // Stats Strip Row
-                    item {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            border = BorderStroke(1.dp, Color(0xFFE8ECF4))
                         ) {
-                            // Enrolled Courses Card
-                            Card(
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(10.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
-                                border = BorderStroke(1.dp, Color(0xFFE8ECF4))
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Row(
-                                    modifier = Modifier.padding(12.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(36.dp)
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(OrangeBg),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Book,
-                                            contentDescription = null,
-                                            tint = BrandOrange,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.width(10.dp))
-                                    Column {
-                                        Text(
-                                            text = "${allCourses.size}",
-                                            fontSize = 18.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = NavyDark
-                                        )
-                                        Text(
-                                            text = "Enrolled",
-                                            fontSize = 11.sp,
-                                            color = Color(0xFF7A8BA5)
-                                        )
-                                    }
-                                }
-                            }
-
-                            // Pending Tasks Card
-                            Card(
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(10.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
-                                border = BorderStroke(1.dp, Color(0xFFE8ECF4))
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(12.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(36.dp)
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(LightGreenSoft),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.CheckCircle,
-                                            contentDescription = null,
-                                            tint = ProfessionalGreen,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.width(10.dp))
-                                    Column {
-                                        Text(
-                                            text = "${dashboardData?.assignmentsPending ?: 0}",
-                                            fontSize = 18.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = NavyDark
-                                        )
-                                        Text(
-                                            text = "Pending Tasks",
-                                            fontSize = 11.sp,
-                                            color = Color(0xFF7A8BA5)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Courses List / Grid
-                    if (filteredCourses.isEmpty()) {
-                        item {
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 24.dp),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
-                                border = BorderStroke(1.dp, Color(0xFFE8ECF4))
-                            ) {
-                                Column(
+                                Box(
                                     modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(32.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally
+                                        .size(36.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(OrangeBg),
+                                    contentAlignment = Alignment.Center
                                 ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(64.dp)
-                                            .clip(CircleShape)
-                                            .background(Color(0xFFF8F9FC)),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Book,
-                                            contentDescription = null,
-                                            tint = Color(0xFF7A8BA5),
-                                            modifier = Modifier.size(28.dp)
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Icon(
+                                        imageVector = Icons.Default.Book,
+                                        contentDescription = null,
+                                        tint = BrandOrange,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
                                     Text(
-                                        text = if (searchQuery.isNotBlank()) "No courses found" else "Your library is empty",
-                                        fontSize = 16.sp,
+                                        text = "${allCourses.size}",
+                                        fontSize = 18.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = NavyDark
                                     )
-                                    Spacer(modifier = Modifier.height(4.dp))
                                     Text(
-                                        text = if (searchQuery.isNotBlank()) "Try a different search query." else "You haven't been enrolled in any courses yet.",
-                                        fontSize = 12.sp,
+                                        text = "Enrolled",
+                                        fontSize = 11.sp,
                                         color = Color(0xFF7A8BA5)
                                     )
                                 }
                             }
                         }
-                    } else {
-                        items(filteredCourses) { course ->
-                            CourseLibraryCard(
-                                course = course,
-                                onClick = {
-                                    if (course.id > 0) {
-                                        onCourseClick(course.id)
-                                    } else {
-                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://ionox.in/lms/student/mycourses.php"))
-                                        context.startActivity(intent)
-                                    }
+
+                        // Pending Tasks Card
+                        Card(
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            border = BorderStroke(1.dp, Color(0xFFE8ECF4))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(LightGreenSoft),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.CheckCircle,
+                                        contentDescription = null,
+                                        tint = ProfessionalGreen,
+                                        modifier = Modifier.size(18.dp)
+                                    )
                                 }
-                            )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = "${dashboardData?.assignmentsPending ?: 0}",
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = NavyDark
+                                    )
+                                    Text(
+                                        text = "Pending Tasks",
+                                        fontSize = 11.sp,
+                                        color = Color(0xFF7A8BA5)
+                                    )
+                                }
+                            }
                         }
+                    }
+                }
+
+                // Courses List / Grid
+                if (filteredCourses.isEmpty()) {
+                    item {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 24.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            border = BorderStroke(1.dp, Color(0xFFE8ECF4))
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(32.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(64.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFFF8F9FC)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Book,
+                                        contentDescription = null,
+                                        tint = Color(0xFF7A8BA5),
+                                        modifier = Modifier.size(28.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    text = if (searchQuery.isNotBlank()) "No courses found" else "Your library is empty",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = NavyDark
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = if (searchQuery.isNotBlank()) "Try a different search query." else "You haven't been enrolled in any courses yet.",
+                                    fontSize = 12.sp,
+                                    color = Color(0xFF7A8BA5)
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    items(filteredCourses) { course ->
+                        CourseLibraryCard(
+                            course = course,
+                            onClick = {
+                                if (course.id > 0) {
+                                    onCourseClick(course.id)
+                                } else {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://ionox.in/lms/student/mycourses.php"))
+                                    context.startActivity(intent)
+                                }
+                            }
+                        )
                     }
                 }
             }
