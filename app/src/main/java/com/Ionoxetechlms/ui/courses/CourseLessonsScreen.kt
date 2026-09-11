@@ -9,6 +9,8 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -26,10 +28,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.Card
@@ -42,6 +48,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -76,7 +83,10 @@ val MutedText = Color(0xFF64748B)
 
 /**
  * Course Lessons & Embedded In-App Video Player Screen in Jetpack Compose
- * Displays 24+ database lessons and plays Google Drive preview and MP4 videos in-app
+ * Features:
+ * 1. Shows Course Thumbnail before video plays, and hides thumbnail when student taps Play.
+ * 2. Plays Youtube, Google Drive preview, Vimeo, and direct MP4 videos seamlessly in-app.
+ * 3. Expandable Description ("Read More" / "Show Less").
  */
 @Composable
 fun CourseLessonsScreen(
@@ -87,6 +97,12 @@ fun CourseLessonsScreen(
     var isLoading by remember { mutableStateOf(true) }
     var courseData by remember { mutableStateOf<CourseLessonsResponse?>(null) }
     var activeLessonIndex by remember { mutableIntStateOf(0) }
+
+    // State controlling thumbnail vs active video playback
+    var isVideoStarted by remember { mutableStateOf(false) }
+
+    // State controlling Expandable Description
+    var isDescExpanded by remember { mutableStateOf(false) }
 
     BackHandler { onBackClick() }
 
@@ -264,22 +280,55 @@ fun CourseLessonsScreen(
                                             .background(Color.Black),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        if (rawVideoUrl.isNotBlank()) {
+                                        if (isVideoStarted && rawVideoUrl.isNotBlank()) {
                                             InAppVideoWebView(videoUrl = rawVideoUrl)
                                         } else {
-                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                                Icon(
-                                                    Icons.Default.PlayArrow,
-                                                    contentDescription = "Play",
-                                                    tint = Color.White,
-                                                    modifier = Modifier.size(42.dp)
-                                                )
-                                                Spacer(modifier = Modifier.height(6.dp))
-                                                Text(
-                                                    "No video for this lesson",
-                                                    fontSize = 12.sp,
-                                                    color = Color.White.copy(alpha = 0.7f)
-                                                )
+                                            // Thumbnail Overlay before Video Play
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .background(Color(0xFF1E293B))
+                                                    .clickable { isVideoStarted = true },
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Column(
+                                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                                    modifier = Modifier.padding(16.dp)
+                                                ) {
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .size(60.dp)
+                                                            .clip(CircleShape)
+                                                            .background(PrimaryIndigo),
+                                                        contentAlignment = Alignment.Center
+                                                    ) {
+                                                        Icon(
+                                                            Icons.Default.PlayArrow,
+                                                            contentDescription = "Play Lesson",
+                                                            tint = Color.White,
+                                                            modifier = Modifier.size(36.dp)
+                                                        )
+                                                    }
+
+                                                    Spacer(modifier = Modifier.height(12.dp))
+
+                                                    Text(
+                                                        text = activeLesson?.title ?: "Start Lesson Video",
+                                                        fontSize = 14.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = Color.White,
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis
+                                                    )
+
+                                                    Spacer(modifier = Modifier.height(2.dp))
+
+                                                    Text(
+                                                        text = "Tap to play video in-app",
+                                                        fontSize = 11.sp,
+                                                        color = Color.White.copy(alpha = 0.7f)
+                                                    )
+                                                }
                                             }
                                         }
                                     }
@@ -343,16 +392,46 @@ fun CourseLessonsScreen(
                                             color = Color.White
                                         )
 
-                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Spacer(modifier = Modifier.height(6.dp))
 
-                                        Text(
-                                            text = activeLesson?.description
-                                                ?.takeIf { it.isNotBlank() }
-                                                ?: "No additional lesson notes provided.",
-                                            fontSize = 12.sp,
-                                            color = Color(0xFF94A3B8),
-                                            lineHeight = 18.sp
-                                        )
+                                        // Expandable Description ("Read More" / "Show Less")
+                                        val fullDesc = activeLesson?.description?.takeIf { it.isNotBlank() }
+                                            ?: "No additional lesson notes provided."
+
+                                        Column(modifier = Modifier.animateContentSize()) {
+                                            Text(
+                                                text = fullDesc,
+                                                fontSize = 12.sp,
+                                                color = Color(0xFF94A3B8),
+                                                lineHeight = 18.sp,
+                                                maxLines = if (isDescExpanded) Int.MAX_VALUE else 3,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+
+                                            if (fullDesc.length > 100) {
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Row(
+                                                    modifier = Modifier
+                                                        .clickable { isDescExpanded = !isDescExpanded }
+                                                        .padding(vertical = 4.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text(
+                                                        text = if (isDescExpanded) "Show Less" else "Read More",
+                                                        fontSize = 12.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = Color(0xFFA5B4FC)
+                                                    )
+                                                    Spacer(modifier = Modifier.width(4.dp))
+                                                    Icon(
+                                                        imageVector = if (isDescExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                                        contentDescription = null,
+                                                        tint = Color(0xFFA5B4FC),
+                                                        modifier = Modifier.size(16.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -376,7 +455,11 @@ fun CourseLessonsScreen(
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable { activeLessonIndex = index },
+                                    .clickable {
+                                        activeLessonIndex = index
+                                        isVideoStarted = false // Show thumbnail on new lesson selection
+                                        isDescExpanded = false
+                                    },
                                 shape = RoundedCornerShape(12.dp),
                                 colors = CardDefaults.cardColors(
                                     containerColor = if (isPlaying) IndigoSoft else Color.White
