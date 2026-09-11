@@ -290,7 +290,7 @@ fun AssignmentCard(
                     Text(
                         text = when (state) {
                             "submitted" -> "SUBMITTED"
-                            "overdue" -> "EXPIRED (0 MARKS)"
+                            "overdue" -> "(0 MARKS)"
                             "locked" -> "LOCKED"
                             else -> "LIVE NOW"
                         },

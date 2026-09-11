@@ -1,10 +1,19 @@
 package com.Ionoxetechlms.ui.certificates
 
+import android.annotation.SuppressLint
+import android.app.DownloadManager
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Environment
+import android.webkit.WebChromeClient
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -52,9 +61,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.Ionoxetechlms.data.api.ApiClient
@@ -72,7 +83,11 @@ val LightMuted = Color(0xFF94A3B8)
 
 /**
  * Student Certificates Screen in Jetpack Compose
- * Full In-App Fullscreen View, Native Share, and Download
+ * Replicates web 'certificates.php' with:
+ * 1. Image preview loading in-app
+ * 2. ONLY 2 Buttons per card (Full Screen View & Download)
+ * 3. Full Screen View with Ref ID, Share, Download, and Close buttons
+ * 4. In-App DownloadManager integration
  */
 @Composable
 fun CertificatesScreen(
@@ -82,9 +97,9 @@ fun CertificatesScreen(
     val context = LocalContext.current
     var isLoading by remember { mutableStateOf(true) }
     var certificatesData by remember { mutableStateOf<CertificateResponse?>(null) }
-    var fullScreenCertificateUrl by remember { mutableStateOf<String?>(null) }
+    var selectedFullScreenCertificate by remember { mutableStateOf<CertificateItem?>(null) }
 
-    // System Back Handler: Returns 1 step back
+    // System Back Handler
     BackHandler {
         onBackClick()
     }
@@ -96,17 +111,17 @@ fun CertificatesScreen(
                 certificatesData = res.body()
             }
         } catch (_: Exception) {
-            // Mock Fallback
+            // Mock Fallback if network offline
             certificatesData = CertificateResponse(
                 status = "success",
                 total = 1,
                 certificates = listOf(
                     CertificateItem(
-                        certificateId = "IONOXE-AI-2026-001",
-                        certificateName = "Artificial Intelligence & Machine Learning Certificate",
+                        certificateId = "IN-2026032408",
+                        certificateName = "Mini Project Completion Certificate",
                         courseTitle = "Artificial Intelligence & Machine Learning",
-                        imageUrl = "https://iili.io/fViYYl9.png",
-                        issuedAt = "10 May 2026"
+                        imageUrl = "https://ionox.in/lms/uploads/certificates/2_IN-2026032408.png",
+                        issuedAt = "24 Mar 2026"
                     )
                 )
             )
@@ -216,7 +231,7 @@ fun CertificatesScreen(
                                         )
                                         Spacer(modifier = Modifier.height(2.dp))
                                         Text(
-                                            text = "Access, view, share and download your verified completion certificates.",
+                                            text = "Access, view in full screen, share and download your verified certificates.",
                                             fontSize = 11.sp,
                                             color = LightMuted
                                         )
@@ -246,23 +261,10 @@ fun CertificatesScreen(
                                 CertificateCard(
                                     item = cert,
                                     onFullScreenClick = {
-                                        fullScreenCertificateUrl = cert.imageUrl ?: "https://iili.io/fViYYl9.png"
-                                    },
-                                    onShareClick = {
-                                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                            type = "text/plain"
-                                            putExtra(Intent.EXTRA_SUBJECT, cert.certificateName)
-                                            putExtra(
-                                                Intent.EXTRA_TEXT,
-                                                "View my verified certificate '${cert.certificateName}' (ID: ${cert.certificateId}) from IoNoxe Tech Solutions: ${cert.imageUrl ?: "https://ionox.in"}"
-                                            )
-                                        }
-                                        context.startActivity(Intent.createChooser(shareIntent, "Share Certificate"))
+                                        selectedFullScreenCertificate = cert
                                     },
                                     onDownloadClick = {
-                                        val url = cert.imageUrl ?: "https://ionox.in/lms/student/certificates.php"
-                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                                        context.startActivity(intent)
+                                        downloadCertificate(context, cert)
                                     }
                                 )
                             }
@@ -272,63 +274,110 @@ fun CertificatesScreen(
             }
         }
 
-        // Full Screen Certificate In-App Viewer Modal
-        fullScreenCertificateUrl?.let { url ->
+        // Full Screen Image Viewer Modal
+        selectedFullScreenCertificate?.let { cert ->
             Dialog(
-                onDismissRequest = { fullScreenCertificateUrl = null },
+                onDismissRequest = { selectedFullScreenCertificate = null },
                 properties = DialogProperties(usePlatformDefaultWidth = false)
             ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = Color.Black
                 ) {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(16.dp),
-                            verticalArrangement = Arrangement.Center,
-                            horizontalAlignment = Alignment.CenterHorizontally
+                    Column(modifier = Modifier.fillMaxSize()) {
+
+                        // Top Full-Screen Toolbar: Ref ID (Left), Share & Download & Close (Right)
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = Color(0xFF0F172A).copy(alpha = 0.95f)
                         ) {
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.White)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Column(
-                                    modifier = Modifier.padding(16.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "Ref ID: ${cert.certificateId ?: "IN-000"}",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = BrandOrange
+                                    )
+                                    Text(
+                                        text = cert.certificateName ?: "Certificate",
+                                        fontSize = 11.sp,
+                                        color = Color.White.copy(alpha = 0.7f),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Box(
+                                    // Share Button
+                                    IconButton(
+                                        onClick = {
+                                            shareCertificate(context, cert)
+                                        },
                                         modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(260.dp)
-                                            .clip(RoundedCornerShape(12.dp))
-                                            .background(OrangeBg),
-                                        contentAlignment = Alignment.Center
+                                            .size(36.dp)
+                                            .background(Color.White.copy(alpha = 0.15f), CircleShape)
                                     ) {
-                                        Icon(
-                                            imageVector = Icons.Default.WorkspacePremium,
-                                            contentDescription = null,
-                                            tint = BrandOrange,
-                                            modifier = Modifier.size(64.dp)
-                                        )
+                                        Icon(Icons.Default.Share, contentDescription = "Share", tint = Color.White, modifier = Modifier.size(18.dp))
                                     }
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    Text("Verified Credential Preview", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+
+                                    // Download Button
+                                    IconButton(
+                                        onClick = {
+                                            downloadCertificate(context, cert)
+                                        },
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .background(BrandOrange, CircleShape)
+                                    ) {
+                                        Icon(Icons.Default.Download, contentDescription = "Download", tint = Color.White, modifier = Modifier.size(18.dp))
+                                    }
+
+                                    // Close Button
+                                    IconButton(
+                                        onClick = { selectedFullScreenCertificate = null },
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .background(Color.White.copy(alpha = 0.15f), CircleShape)
+                                    ) {
+                                        Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White, modifier = Modifier.size(18.dp))
+                                    }
                                 }
                             }
                         }
 
-                        // Top Close Icon Button
-                        IconButton(
-                            onClick = { fullScreenCertificateUrl = null },
+                        // Full Screen Certificate Image
+                        Box(
                             modifier = Modifier
-                                .padding(16.dp)
-                                .align(Alignment.TopEnd)
-                                .background(Color.White.copy(alpha = 0.2f), CircleShape)
+                                .weight(1f)
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+                            if (!cert.imageUrl.isNullOrBlank()) {
+                                CertificateImageView(
+                                    imageUrl = cert.imageUrl,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(RoundedCornerShape(8.dp))
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.WorkspacePremium,
+                                    contentDescription = null,
+                                    tint = BrandOrange,
+                                    modifier = Modifier.size(96.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -337,11 +386,15 @@ fun CertificatesScreen(
     }
 }
 
+/**
+ * Certificate Card Item with ONLY 2 Buttons:
+ * 1. "Full Screen View"
+ * 2. "Download"
+ */
 @Composable
 fun CertificateCard(
     item: CertificateItem,
     onFullScreenClick: () -> Unit,
-    onShareClick: () -> Unit,
     onDownloadClick: () -> Unit
 ) {
     Card(
@@ -351,99 +404,200 @@ fun CertificateCard(
         border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(18.dp)) {
+        Column(modifier = Modifier.fillMaxWidth()) {
 
-            // Top Header: Ref ID & Verified Badge
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            // Certificate Image Preview Banner with Verified Badge
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .background(Color(0xFF0F172A))
+                    .clickable { onFullScreenClick() },
+                contentAlignment = Alignment.Center
             ) {
+                if (!item.imageUrl.isNullOrBlank()) {
+                    CertificateImageView(
+                        imageUrl = item.imageUrl,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.WorkspacePremium,
+                        contentDescription = null,
+                        tint = BrandOrange,
+                        modifier = Modifier.size(48.dp)
+                    )
+                }
+
+                // Verified Badge (Top Right)
+                Surface(
+                    shape = RoundedCornerShape(100.dp),
+                    color = ProfessionalGreen,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color.White, modifier = Modifier.size(10.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(text = "VERIFIED", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    }
+                }
+            }
+
+            // Body
+            Column(modifier = Modifier.padding(16.dp)) {
+                // Ref ID
                 Text(
-                    text = "Ref ID: ${item.certificateId ?: "CERT-001"}",
-                    fontSize = 10.sp,
+                    text = "Ref ID: ${item.certificateId ?: "IN-000"}",
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = BrandOrange,
                     letterSpacing = 0.8.sp
                 )
 
-                Surface(
-                    shape = RoundedCornerShape(100.dp),
-                    color = LightGreenSoft,
-                    border = BorderStroke(1.dp, Color(0x3316A34A))
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // Certificate Name
+                Text(
+                    text = item.certificateName ?: "Course Completion Certificate",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = NavyDark
+                )
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                // Course & Issued Date
+                Text(
+                    text = "${item.courseTitle ?: "Course"} • Issued ${item.issuedAt ?: "recently"}",
+                    fontSize = 12.sp,
+                    color = LightMuted
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // ONLY 2 BUTTONS: Full Screen View & Download
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    // Button 1: Full Screen View
+                    OutlinedButton(
+                        onClick = onFullScreenClick,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
                     ) {
-                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = ProfessionalGreen, modifier = Modifier.size(10.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(text = "VERIFIED", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = ProfessionalGreen)
+                        Icon(Icons.Default.Fullscreen, contentDescription = "Full Screen", modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Full Screen View", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
-                }
-            }
 
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Certificate Title
-            Text(
-                text = item.certificateName ?: "Course Completion Certificate",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = NavyDark
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // Issued Date
-            Text(
-                text = "Issued on ${item.issuedAt ?: "recently"}",
-                fontSize = 12.sp,
-                color = LightMuted
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Action Buttons Row (Full Screen, Share, Download)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OutlinedButton(
-                    onClick = onFullScreenClick,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(8.dp),
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0))
-                ) {
-                    Icon(Icons.Default.Fullscreen, contentDescription = "View", modifier = Modifier.size(14.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("View", fontSize = 11.sp)
-                }
-
-                OutlinedButton(
-                    onClick = onShareClick,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(8.dp),
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0))
-                ) {
-                    Icon(Icons.Default.Share, contentDescription = "Share", modifier = Modifier.size(14.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Share", fontSize = 11.sp)
-                }
-
-                Button(
-                    onClick = onDownloadClick,
-                    modifier = Modifier.weight(1.2f),
-                    colors = ButtonDefaults.buttonColors(containerColor = NavyDark),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Icon(Icons.Default.Download, contentDescription = "Download", tint = Color.White, modifier = Modifier.size(14.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Download", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    // Button 2: Download
+                    Button(
+                        onClick = onDownloadClick,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(containerColor = NavyDark),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(Icons.Default.Download, contentDescription = "Download", tint = Color.White, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Download", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    }
                 }
             }
         }
     }
+}
+
+/**
+ * In-App High Performance Certificate Image View
+ */
+@SuppressLint("SetJavaScriptEnabled")
+@Composable
+fun CertificateImageView(
+    imageUrl: String,
+    modifier: Modifier = Modifier
+) {
+    AndroidView(
+        modifier = modifier,
+        factory = { context ->
+            WebView(context).apply {
+                settings.javaScriptEnabled = true
+                settings.domStorageEnabled = true
+                settings.allowFileAccess = true
+                webViewClient = WebViewClient()
+                webChromeClient = WebChromeClient()
+                loadDataWithBaseURL(
+                    null,
+                    "<html><body style='margin:0;padding:0;background:#0F172A;display:flex;justify-content:center;align-items:center;height:100vh;'><img src='$imageUrl' style='max-width:100%;max-height:100%;object-fit:contain;'/></body></html>",
+                    "text/html",
+                    "UTF-8",
+                    null
+                )
+            }
+        },
+        update = { webView ->
+            webView.loadDataWithBaseURL(
+                null,
+                "<html><body style='margin:0;padding:0;background:#0F172A;display:flex;justify-content:center;align-items:center;height:100vh;'><img src='$imageUrl' style='max-width:100%;max-height:100%;object-fit:contain;'/></body></html>",
+                "text/html",
+                "UTF-8",
+                null
+            )
+        }
+    )
+}
+
+/**
+ * In-App Download Manager helper
+ */
+fun downloadCertificate(context: Context, item: CertificateItem) {
+    val imgUrl = item.imageUrl
+    if (imgUrl.isNullOrBlank()) {
+        Toast.makeText(context, "Certificate image URL unavailable", Toast.LENGTH_SHORT).show()
+        return
+    }
+
+    try {
+        val fileName = "${item.certificateId ?: "Certificate"}.png"
+        val request = DownloadManager.Request(Uri.parse(imgUrl)).apply {
+            setTitle(item.certificateName ?: "Downloading Certificate")
+            setDescription("Downloading verified certificate ${item.certificateId ?: ""}")
+            setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+            setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)
+            setAllowedOverMetered(true)
+            setAllowedOverRoaming(true)
+        }
+
+        val manager = context.getSystemService(Context.DOWNLOAD_SERVICE) as? DownloadManager
+        manager?.enqueue(request)
+        Toast.makeText(context, "Downloading ${item.certificateId ?: "certificate"}...", Toast.LENGTH_SHORT).show()
+    } catch (_: Exception) {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(imgUrl))
+        context.startActivity(intent)
+    }
+}
+
+/**
+ * Native Share Certificate helper
+ */
+fun shareCertificate(context: Context, item: CertificateItem) {
+    try {
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_SUBJECT, item.certificateName ?: "Certificate")
+            putExtra(
+                Intent.EXTRA_TEXT,
+                "View my verified certificate '${item.certificateName}' (Ref ID: ${item.certificateId}) from IoNoxe Tech Solutions: ${item.imageUrl ?: "https://ionox.in"}"
+            )
+        }
+        context.startActivity(Intent.createChooser(shareIntent, "Share Certificate"))
+    } catch (_: Exception) {}
 }
 
 @Preview(showBackground = true)
