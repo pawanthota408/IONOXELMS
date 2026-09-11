@@ -87,13 +87,7 @@ interface LmsApiService {
 
     @GET("api/course_lesson")
     suspend fun getCourseLessons(
-        @Query("student_id") studentId: Int,
-        @Query("course_id") courseId: Int
-    ): Response<CourseLessonsResponse>
-
-    @GET("course_lesson.php")
-    suspend fun getCourseLessonsDirect(
-        @Query("student_id") studentId: Int,
-        @Query("course_id") courseId: Int
+        @Query("course_id") courseId: Int,
+        @Query("student_id") studentId: Int
     ): Response<CourseLessonsResponse>
 }

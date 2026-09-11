@@ -127,16 +127,6 @@ fun ProfileScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Page Header Title
-                item {
-                    Text(
-                        text = "My Profile",
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = NavyDark
-                    )
-                }
-
                 // Hero Profile Card
                 item {
                     Card(

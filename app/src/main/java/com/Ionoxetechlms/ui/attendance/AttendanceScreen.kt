@@ -117,14 +117,7 @@ fun AttendanceScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // Page Header Title
-                item {
-                    Text(
-                        text = "Attendance Records",
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = NavyTitle
-                    )
-                }
+
 
                 // Summary Stats Row (4 Cards)
                 item {

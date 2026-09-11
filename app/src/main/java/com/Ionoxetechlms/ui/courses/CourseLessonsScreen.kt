@@ -54,7 +54,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -63,7 +62,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.Ionoxetechlms.data.api.ApiClient
 import com.Ionoxetechlms.data.api.CourseLessonsResponse
-import com.Ionoxetechlms.data.api.LessonItem
 import com.Ionoxetechlms.ui.dashboard.DashboardBottomNavigation
 import com.Ionoxetechlms.ui.theme.IONOXELMSTheme
 import com.Ionoxetechlms.ui.theme.ProfessionalGreen
@@ -78,7 +76,7 @@ val MutedText = Color(0xFF64748B)
 
 /**
  * Course Lessons & Embedded In-App Video Player Screen in Jetpack Compose
- * Replicates web 'course_lessons.php' with in-app video playback and 1-step BackHandler
+ * Displays 24+ database lessons and plays Google Drive preview and MP4 videos in-app
  */
 @Composable
 fun CourseLessonsScreen(
@@ -86,50 +84,34 @@ fun CourseLessonsScreen(
     courseId: Int = 1,
     onBackClick: () -> Unit = {}
 ) {
-    val context = LocalContext.current
     var isLoading by remember { mutableStateOf(true) }
     var courseData by remember { mutableStateOf<CourseLessonsResponse?>(null) }
-
-    // -1 = nothing selected. Prevents empty/first lesson auto-play.
-    var activeLessonIndex by remember { mutableIntStateOf(-1) }
+    var activeLessonIndex by remember { mutableIntStateOf(0) }
 
     BackHandler { onBackClick() }
 
     val completedLessons = remember { mutableStateMapOf<Int, Boolean>() }
 
-    // ── Load lessons from API ─────────────────────────────────────────────
+    // ── Load live lessons from API ─────────────────────────────────────────
     LaunchedEffect(studentId, courseId) {
         isLoading = true
         try {
-            Log.d(TAG, "Fetching lessons: studentId=$studentId courseId=$courseId")
-            val res = ApiClient.apiService.getCourseLessons(studentId, courseId)
+            Log.d(TAG, "Fetching lessons: courseId=$courseId studentId=$studentId")
+            val res = ApiClient.apiService.getCourseLessons(courseId, studentId)
 
-            if (res.isSuccessful) {
-                val body = res.body()
-                if (body != null) {
-                    Log.d(TAG, "OK  status=${body.status} courseId=${body.courseId} " +
-                            "title='${body.title}' totalLessons=${body.totalLessons} " +
-                            "lessons.size=${body.lessons.size}")
-                    body.lessons.forEachIndexed { i, l ->
-                        Log.d(TAG, "  lesson[$i] id=${l.id} title='${l.title}' video='${l.videoUrl}'")
-                    }
-                    courseData = body
-
-                    // Auto-select first lesson ONLY if there is one
-                    if (body.lessons.isNotEmpty() && activeLessonIndex < 0) {
-                        activeLessonIndex = 0
-                    }
-                } else {
-                    Log.w(TAG, "OK but body is null")
-                    courseData = emptyCourse(courseId)
+            if (res.isSuccessful && res.body() != null) {
+                val body = res.body()!!
+                Log.d(TAG, "Fetched ${body.lessons.size} lessons for course: ${body.title}")
+                courseData = body
+                if (body.lessons.isNotEmpty()) {
+                    activeLessonIndex = 0
                 }
             } else {
-                val errBody = try { res.errorBody()?.string() } catch (_: Exception) { null }
-                Log.e(TAG, "HTTP ${res.code()} ${res.message()} errBody=$errBody")
+                Log.w(TAG, "API failed: HTTP ${res.code()} ${res.message()}")
                 courseData = emptyCourse(courseId)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Exception during API call: ${e.javaClass.simpleName}: ${e.message}", e)
+            Log.e(TAG, "Exception during getCourseLessons: ${e.message}", e)
             courseData = emptyCourse(courseId)
         } finally {
             isLoading = false
@@ -474,8 +456,7 @@ fun CourseLessonsScreen(
 }
 
 /**
- * Empty course response — used when API fails so the UI shows the
- * "No lessons yet" state instead of a fake playlist.
+ * Empty course response
  */
 private fun emptyCourse(courseId: Int) = CourseLessonsResponse(
     status = "empty",
@@ -489,7 +470,7 @@ private fun emptyCourse(courseId: Int) = CourseLessonsResponse(
 
 /**
  * Embedded In-App WebView Video Player
- * Logs page loads and errors so you can see WHY a video fails to render.
+ * Configured with Mobile User-Agent to render Google Drive previews & MP4 video streams smoothly
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -506,6 +487,7 @@ fun InAppVideoWebView(videoUrl: String) {
                 settings.domStorageEnabled = true
                 settings.allowFileAccess = true
                 settings.mediaPlaybackRequiresUserGesture = false
+                settings.userAgentString = "Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
 
                 webViewClient = object : WebViewClient() {
                     override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
@@ -531,7 +513,6 @@ fun InAppVideoWebView(videoUrl: String) {
             }
         },
         update = { webView ->
-            // Only reload if URL actually changed — prevents flicker
             if (webView.url != embedUrl) {
                 Log.d(TAG, "WebView update() → loadUrl($embedUrl)")
                 webView.loadUrl(embedUrl)
@@ -542,33 +523,28 @@ fun InAppVideoWebView(videoUrl: String) {
 
 fun formatEmbedVideoUrl(url: String): String {
     if (url.isBlank()) return "about:blank"
+    val trimmed = url.trim()
     return when {
-        url.contains("youtube.com/watch?v=") -> {
-            val videoId = url.substringAfter("v=").substringBefore("&")
+        trimmed.contains("drive.google.com/file/d/") -> {
+            if (trimmed.endsWith("/preview")) trimmed
+            else {
+                val fileId = trimmed.substringAfter("/file/d/").substringBefore("/")
+                "https://drive.google.com/file/d/$fileId/preview"
+            }
+        }
+        trimmed.contains("youtube.com/watch?v=") -> {
+            val videoId = trimmed.substringAfter("v=").substringBefore("&")
             "https://www.youtube-nocookie.com/embed/$videoId?autoplay=1&rel=0"
         }
-        url.contains("youtu.be/") -> {
-            val videoId = url.substringAfter("youtu.be/").substringBefore("?")
+        trimmed.contains("youtu.be/") -> {
+            val videoId = trimmed.substringAfter("youtu.be/").substringBefore("?")
             "https://www.youtube-nocookie.com/embed/$videoId?autoplay=1&rel=0"
         }
-        url.contains("youtube.com/shorts/") -> {
-            val videoId = url.substringAfter("youtube.com/shorts/").substringBefore("?")
-            "https://www.youtube-nocookie.com/embed/$videoId?autoplay=1&rel=0"
-        }
-        url.contains("youtube.com/embed/") -> {
-            // Already an embed URL — ensure autoplay
-            if (url.contains("autoplay=")) url
-            else "$url${if (url.contains("?")) "&" else "?"}autoplay=1&rel=0"
-        }
-        url.contains("vimeo.com/") -> {
-            val videoId = url.substringAfter("vimeo.com/").substringBefore("?")
+        trimmed.contains("vimeo.com/") -> {
+            val videoId = trimmed.substringAfter("vimeo.com/").substringBefore("?")
             "https://player.vimeo.com/video/$videoId?autoplay=1"
         }
-        url.contains("drive.google.com/file/d/") -> {
-            val fileId = url.substringAfter("/file/d/").substringBefore("/")
-            "https://drive.google.com/file/d/$fileId/preview"
-        }
-        else -> url
+        else -> trimmed
     }
 }
 

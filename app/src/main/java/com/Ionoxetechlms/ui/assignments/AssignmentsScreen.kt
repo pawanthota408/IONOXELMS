@@ -118,59 +118,7 @@ fun AssignmentsScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Title Banner
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        border = BorderStroke(1.dp, Color(0xFFE8ECF4))
-                    ) {
-                        Column(modifier = Modifier.padding(18.dp)) {
-                            Text(
-                                text = "Assignments & Projects",
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = NavyDark
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "Sorted newest first • Active deadline allows attempts • Overdue shows answers (0 Marks)",
-                                fontSize = 12.sp,
-                                color = LightMuted
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Surface(
-                                    shape = RoundedCornerShape(100.dp),
-                                    color = OrangeBg,
-                                    border = BorderStroke(1.dp, OrangeBorder)
-                                ) {
-                                    Text(
-                                        text = "${mcqList.size} MCQ(s)",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = BrandOrange,
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                                    )
-                                }
-                                Surface(
-                                    shape = RoundedCornerShape(100.dp),
-                                    color = PurpleBg,
-                                    border = BorderStroke(1.dp, Color(0x337C3AED))
-                                ) {
-                                    Text(
-                                        text = "${projList.size} Descriptive(s)",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = PurpleAccent,
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
+
 
                 // Stats Row (4 summary cards)
                 item {

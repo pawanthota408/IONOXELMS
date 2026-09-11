@@ -145,31 +145,6 @@ fun MyCoursesScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Page Title Section
-                item {
-                    Column {
-                        Text(
-                            text = "Course Library",
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = NavyDark
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "You are enrolled in ",
-                                fontSize = 13.sp,
-                                color = Color(0xFF7A8BA5)
-                            )
-                            Text(
-                                text = "${allCourses.size} courses.",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = BrandOrange
-                            )
-                        }
-                    }
-                }
 
                 // Search Input
                 item {
