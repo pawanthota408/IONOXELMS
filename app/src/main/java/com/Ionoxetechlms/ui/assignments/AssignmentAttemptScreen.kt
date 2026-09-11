@@ -1,7 +1,7 @@
 package com.Ionoxetechlms.ui.assignments
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -55,13 +55,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.Ionoxetechlms.R
 import com.Ionoxetechlms.data.api.ApiClient
 import com.Ionoxetechlms.data.api.AssignmentDetailResponse
 import com.Ionoxetechlms.data.api.AssignmentSubmitRequest
@@ -74,7 +72,7 @@ import java.util.Locale
 
 /**
  * Assignment Attempt / Proctored Exam Screen in Jetpack Compose
- * Replicates web 'assignment_attempt.php'
+ * Replicates web 'assignment_attempt.php' with BackHandler
  */
 @Composable
 fun AssignmentAttemptScreen(
@@ -91,6 +89,11 @@ fun AssignmentAttemptScreen(
     var currentQIndex by remember { mutableIntStateOf(0) }
     val studentAnswers = remember { mutableStateMapOf<String, String>() }
     var showSubmitDialog by remember { mutableStateOf(false) }
+
+    // System Back Handler: 1-step back navigation
+    BackHandler {
+        onBackClick()
+    }
 
     // Countdown timer (in seconds)
     var remainingSeconds by remember { mutableIntStateOf(3600) }

@@ -2,6 +2,7 @@ package com.Ionoxetechlms.ui.assignments
 
 import android.content.Intent
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -67,7 +68,7 @@ val AmberBg = Color(0xFFFFFBEB)
 
 /**
  * Assignment Detail & Results Review Screen in Jetpack Compose
- * Shows score hero banner, question review with correct answers, and submitted attachments
+ * Replicates web 'assignment_view.php' with BackHandler
  */
 @Composable
 fun AssignmentDetailScreen(
@@ -78,6 +79,11 @@ fun AssignmentDetailScreen(
     val context = LocalContext.current
     var isLoading by remember { mutableStateOf(true) }
     var detail by remember { mutableStateOf<AssignmentDetailResponse?>(null) }
+
+    // System Back Handler: 1-step back navigation
+    BackHandler {
+        onBackClick()
+    }
 
     LaunchedEffect(assignmentId) {
         try {
@@ -128,7 +134,6 @@ fun AssignmentDetailScreen(
 
     val data = detail ?: AssignmentDetailResponse("success")
     val isSubmitted = data.submitted
-    val isExpired = !isSubmitted
 
     Surface(
         modifier = Modifier.fillMaxSize(),
