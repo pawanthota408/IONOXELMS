@@ -1,6 +1,7 @@
 package com.Ionoxetechlms.ui.login
 
 import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -26,8 +27,6 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -35,9 +34,11 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -66,7 +67,11 @@ import kotlinx.coroutines.launch
 
 /**
  * Login Screen for Ionoxetech LMS Application
- * Connected to MySQL Database 'students' table via REST API (https://ionox.in/lms/api/login.php)
+ * Features:
+ * 1. Step 1: Shows Email field first with "NEXT" button.
+ * 2. Step 2: After entering Email, hides Email field and reveals Password field with "SIGN IN".
+ * 3. Removed "Remember Me" button.
+ * 4. Brand Green `#16A34A` primary palette across all elements.
  */
 @Composable
 fun LoginScreen(
@@ -75,24 +80,30 @@ fun LoginScreen(
     onForgotPasswordClick: () -> Unit = {},
     onContactAdminClick: () -> Unit = {}
 ) {
+    var loginStep by remember { mutableIntStateOf(1) } // 1 = Email step, 2 = Password step
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isPasswordVisible by remember { mutableStateOf(false) }
-    var rememberMe by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var successMessage by remember { mutableStateOf<String?>(null) }
 
     val coroutineScope = rememberCoroutineScope()
 
+    // Handle Back Press in Step 2: returns to Step 1
+    BackHandler(enabled = loginStep == 2) {
+        loginStep = 1
+        errorMessage = null
+    }
+
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        // Same 9:16 Green Wave Background as Splash Screen
+        // Green Wave Background as Splash Screen
         SplashScreenBackground()
 
-        // Login Form Container in Center Zone
+        // Login Form Container
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -114,7 +125,7 @@ fun LoginScreen(
 
             // Welcome Header
             Text(
-                text = "Welcome Back",
+                text = if (loginStep == 1) "Sign In" else "Enter Password",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF0F172A),
@@ -124,7 +135,7 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "Sign in to access your LMS learning portal",
+                text = if (loginStep == 1) "Enter your Email or Student ID to continue" else "Enter password to access your LMS portal",
                 fontSize = 13.sp,
                 color = Color(0xFF64748B),
                 textAlign = TextAlign.Center
@@ -132,236 +143,293 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Email / Student ID Field
-            OutlinedTextField(
-                value = email,
-                onValueChange = {
-                    email = it
-                    errorMessage = null
-                    successMessage = null
-                },
-                label = { Text("Email / Student ID") },
-                placeholder = { Text("you@example.com or Student ID") },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Email,
-                        contentDescription = "Email Icon",
-                        tint = ProfessionalGreen
-                    )
-                },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = ProfessionalGreen,
-                    focusedLabelColor = ProfessionalGreen,
-                    cursorColor = ProfessionalGreen
-                ),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // Password Field
-            OutlinedTextField(
-                value = password,
-                onValueChange = {
-                    password = it
-                    errorMessage = null
-                    successMessage = null
-                },
-                label = { Text("Password") },
-                placeholder = { Text("••••••••") },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Lock,
-                        contentDescription = "Password Icon",
-                        tint = ProfessionalGreen
-                    )
-                },
-                trailingIcon = {
-                    val icon = if (isPasswordVisible)
-                        Icons.Default.Visibility
-                    else
-                        Icons.Default.VisibilityOff
-
-                    IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
+            // ==================== STEP 1: EMAIL FIRST ====================
+            if (loginStep == 1) {
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = {
+                        email = it
+                        errorMessage = null
+                        successMessage = null
+                    },
+                    label = { Text("Email / Student ID") },
+                    placeholder = { Text("you@example.com or Student ID") },
+                    leadingIcon = {
                         Icon(
-                            imageVector = icon,
-                            contentDescription = if (isPasswordVisible) "Hide password" else "Show password",
-                            tint = Color(0xFF64748B)
+                            imageVector = Icons.Default.Email,
+                            contentDescription = "Email Icon",
+                            tint = ProfessionalGreen
                         )
-                    }
-                },
-                visualTransformation = if (isPasswordVisible)
-                    VisualTransformation.None
-                else
-                    PasswordVisualTransformation(),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = ProfessionalGreen,
-                    focusedLabelColor = ProfessionalGreen,
-                    cursorColor = ProfessionalGreen
-                ),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.fillMaxWidth()
-            )
+                    },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = ProfessionalGreen,
+                        focusedLabelColor = ProfessionalGreen,
+                        cursorColor = ProfessionalGreen
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                )
 
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // Remember Me + Forgot Password
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(
-                        checked = rememberMe,
-                        onCheckedChange = { rememberMe = it },
-                        colors = CheckboxDefaults.colors(checkedColor = ProfessionalGreen)
-                    )
+                if (errorMessage != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Remember me",
+                        text = errorMessage!!,
+                        color = Color.Red,
                         fontSize = 12.sp,
-                        color = Color(0xFF334155)
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
 
-                Text(
-                    text = "Forgot Password?",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = ProfessionalGreen,
-                    modifier = Modifier.clickable {
-                        onForgotPasswordClick()
-                    }
-                )
-            }
+                Spacer(modifier = Modifier.height(20.dp))
 
-            // Error Message
-            if (errorMessage != null) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = errorMessage!!,
-                    color = Color.Red,
-                    fontSize = 12.sp,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-
-            // Success Message
-            if (successMessage != null) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = successMessage!!,
-                    color = ProfessionalGreen,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // ==================== SIGN IN BUTTON ====================
-            Button(
-                onClick = {
-                    val inputEmail = email.trim()
-                    val inputPassword = password.trim()
-
-                    if (inputEmail.isBlank() || inputPassword.isBlank()) {
-                        errorMessage = "Please enter both Email and Password"
-                        successMessage = null
-                        return@Button
-                    }
-
-                    isLoading = true
-                    errorMessage = null
-                    successMessage = null
-
-                    coroutineScope.launch {
-                        try {
-                            // Primary authentication method: Form URL-Encoded (populates $_POST in PHP 100% reliably)
-                            var response = ApiClient.apiService.loginForm(inputEmail, inputPassword)
-                            if (!response.isSuccessful || response.body()?.status != "success") {
-                                try {
-                                    val jsonRes = ApiClient.apiService.login(LoginRequest(email = inputEmail, password = inputPassword))
-                                    if (jsonRes.isSuccessful && jsonRes.body()?.status == "success") {
-                                        response = jsonRes
-                                    }
-                                } catch (_: Exception) {}
-                            }
-
-                            isLoading = false
-
-                            Log.d("LOGIN_DEBUG", "HTTP Code: ${response.code()}")
-                            Log.d("LOGIN_DEBUG", "Is Successful: ${response.isSuccessful}")
-                            Log.d("LOGIN_DEBUG", "Body: ${response.body()}")
-
-                            val body = response.body()
-                            if (response.isSuccessful && body?.status == "success") {
-                                val studentObj = body.student
-                                val studentId = studentObj?.id ?: 999
-                                val studentName = studentObj?.name ?: "Student"
-
-                                successMessage = "Welcome $studentName!"
-                                onLoginSuccess(studentId, studentName)
-                            } else {
-                                val errorJson = response.errorBody()?.string()
-                                var parsedMsg: String? = null
-                                if (!errorJson.isNullOrEmpty()) {
-                                    try {
-                                        @Suppress("DEPRECATION")
-                                        val jsonElement = JsonParser().parse(errorJson)
-                                        if (jsonElement.isJsonObject) {
-                                            val errObj: JsonObject = jsonElement.asJsonObject
-                                            if (errObj.has("message")) {
-                                                parsedMsg = errObj.get("message").asString
-                                            }
-                                        }
-                                    } catch (_: Exception) {}
-                                }
-                                errorMessage = parsedMsg ?: body?.message ?: "Invalid email/Student ID or password."
-                            }
-
-                        } catch (e: Exception) {
-                            isLoading = false
-                            Log.e("LOGIN_DEBUG", "Exception", e)
-
-                            if ((inputEmail == "demo@ionox.in" || inputEmail == "demo") && inputPassword == "demo") {
-                                successMessage = "Welcome Demo Student!"
-                                onLoginSuccess(999, "Demo Student")
-                            } else {
-                                errorMessage = "Unable to connect to server. Please check your connection."
-                            }
+                // NEXT BUTTON
+                Button(
+                    onClick = {
+                        if (email.isBlank()) {
+                            errorMessage = "Please enter your Email or Student ID"
+                        } else {
+                            errorMessage = null
+                            loginStep = 2 // Move to Password Step
                         }
-                    }
-                },
-                enabled = !isLoading,
-                colors = ButtonDefaults.buttonColors(containerColor = ProfessionalGreen),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        color = Color.White,
-                        modifier = Modifier.size(22.dp),
-                        strokeWidth = 2.dp
-                    )
-                } else {
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = ProfessionalGreen),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp)
+                ) {
                     Text(
-                        text = "SIGN IN",
+                        text = "NEXT",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp,
                         color = Color.White
                     )
+                }
+            }
+
+            // ==================== STEP 2: PASSWORD SECOND ====================
+            if (loginStep == 2) {
+                // Email Display Chip with Change Link
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = Color(0xFFF0FDF4),
+                    border = BorderStroke(1.dp, Color(0x3316A34A)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.Email, contentDescription = null, tint = ProfessionalGreen, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = email,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF0F172A)
+                            )
+                        }
+
+                        Text(
+                            text = "Change",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = ProfessionalGreen,
+                            modifier = Modifier.clickable {
+                                loginStep = 1
+                                errorMessage = null
+                            }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Password Input Field
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = {
+                        password = it
+                        errorMessage = null
+                        successMessage = null
+                    },
+                    label = { Text("Password") },
+                    placeholder = { Text("••••••••") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = "Password Icon",
+                            tint = ProfessionalGreen
+                        )
+                    },
+                    trailingIcon = {
+                        val icon = if (isPasswordVisible)
+                            Icons.Default.Visibility
+                        else
+                            Icons.Default.VisibilityOff
+
+                        IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = if (isPasswordVisible) "Hide password" else "Show password",
+                                tint = Color(0xFF64748B)
+                            )
+                        }
+                    },
+                    visualTransformation = if (isPasswordVisible)
+                        VisualTransformation.None
+                    else
+                        PasswordVisualTransformation(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = ProfessionalGreen,
+                        focusedLabelColor = ProfessionalGreen,
+                        cursorColor = ProfessionalGreen
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Text(
+                        text = "Forgot Password?",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = ProfessionalGreen,
+                        modifier = Modifier.clickable { onForgotPasswordClick() }
+                    )
+                }
+
+                if (errorMessage != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = errorMessage!!,
+                        color = Color.Red,
+                        fontSize = 12.sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                if (successMessage != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = successMessage!!,
+                        color = ProfessionalGreen,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // SIGN IN BUTTON
+                Button(
+                    onClick = {
+                        val inputEmail = email.trim()
+                        val inputPassword = password.trim()
+
+                        if (inputPassword.isBlank()) {
+                            errorMessage = "Please enter your password"
+                            return@Button
+                        }
+
+                        isLoading = true
+                        errorMessage = null
+                        successMessage = null
+
+                        coroutineScope.launch {
+                            try {
+                                var response = ApiClient.apiService.loginForm(inputEmail, inputPassword)
+                                if (!response.isSuccessful || response.body()?.status != "success") {
+                                    try {
+                                        val jsonRes = ApiClient.apiService.login(LoginRequest(email = inputEmail, password = inputPassword))
+                                        if (jsonRes.isSuccessful && jsonRes.body()?.status == "success") {
+                                            response = jsonRes
+                                        }
+                                    } catch (_: Exception) {}
+                                }
+
+                                isLoading = false
+
+                                val body = response.body()
+                                if (response.isSuccessful && body?.status == "success") {
+                                    val studentObj = body.student
+                                    val studentId = studentObj?.id ?: 999
+                                    val studentName = studentObj?.name ?: "Student"
+
+                                    successMessage = "Welcome $studentName!"
+                                    onLoginSuccess(studentId, studentName)
+                                } else {
+                                    val errorJson = response.errorBody()?.string()
+                                    var parsedMsg: String? = null
+                                    if (!errorJson.isNullOrEmpty()) {
+                                        try {
+                                            @Suppress("DEPRECATION")
+                                            val jsonElement = JsonParser().parse(errorJson)
+                                            if (jsonElement.isJsonObject) {
+                                                val errObj: JsonObject = jsonElement.asJsonObject
+                                                if (errObj.has("message")) {
+                                                    parsedMsg = errObj.get("message").asString
+                                                }
+                                            }
+                                        } catch (_: Exception) {}
+                                    }
+                                    errorMessage = parsedMsg ?: body?.message ?: "Invalid email or password."
+                                }
+
+                            } catch (e: Exception) {
+                                isLoading = false
+                                if ((inputEmail == "demo@ionox.in" || inputEmail == "demo") && inputPassword == "demo") {
+                                    successMessage = "Welcome Demo Student!"
+                                    onLoginSuccess(999, "Demo Student")
+                                } else {
+                                    errorMessage = "Unable to connect to server. Please check your connection."
+                                }
+                            }
+                        }
+                    },
+                    enabled = !isLoading,
+                    colors = ButtonDefaults.buttonColors(containerColor = ProfessionalGreen),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp)
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.size(22.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text(
+                            text = "SIGN IN",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp,
+                            color = Color.White
+                        )
+                    }
                 }
             }
 

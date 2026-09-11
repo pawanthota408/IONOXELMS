@@ -58,15 +58,15 @@ import com.Ionoxetechlms.ui.theme.IONOXELMSTheme
 import com.Ionoxetechlms.ui.theme.LightGreenSoft
 import com.Ionoxetechlms.ui.theme.ProfessionalGreen
 
-val BrandOrange = Color(0xFFF97316)
-val OrangeBg = Color(0xFFFFF7ED)
-val OrangeBorder = Color(0x33F97316)
+val BrandGreen = Color(0xFF16A34A)
+val BrandGreenBg = Color(0xFFF0FDF4)
+val BrandGreenBorder = Color(0x3316A34A)
 val NavyDark = Color(0xFF1A1F2E)
 val PageBg = Color(0xFFF1F3F8)
 
 /**
  * My Courses Screen for Ionoxetech LMS App
- * Embedded directly inside Dashboard scaffold without duplicate top bar
+ * Synced with Brand Green #16A34A Primary Palette
  */
 @Composable
 fun MyCoursesScreen(
@@ -145,6 +145,22 @@ fun MyCoursesScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // Page Subtitle Count
+                item {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "You are enrolled in ",
+                            fontSize = 13.sp,
+                            color = Color(0xFF7A8BA5)
+                        )
+                        Text(
+                            text = "${allCourses.size} courses.",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = BrandGreen
+                        )
+                    }
+                }
 
                 // Search Input
                 item {
@@ -164,9 +180,9 @@ fun MyCoursesScreen(
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = Color.White,
                             unfocusedContainerColor = Color.White,
-                            focusedBorderColor = BrandOrange,
+                            focusedBorderColor = BrandGreen,
                             unfocusedBorderColor = Color(0xFFE8ECF4),
-                            cursorColor = BrandOrange
+                            cursorColor = BrandGreen
                         ),
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -193,13 +209,13 @@ fun MyCoursesScreen(
                                     modifier = Modifier
                                         .size(36.dp)
                                         .clip(RoundedCornerShape(8.dp))
-                                        .background(OrangeBg),
+                                        .background(BrandGreenBg),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Book,
                                         contentDescription = null,
-                                        tint = BrandOrange,
+                                        tint = BrandGreen,
                                         modifier = Modifier.size(18.dp)
                                     )
                                 }
@@ -332,7 +348,7 @@ fun MyCoursesScreen(
 }
 
 /**
- * Course Library Card matching Web Design (mycourses.php)
+ * Course Library Card
  */
 @Composable
 fun CourseLibraryCard(
@@ -355,13 +371,13 @@ fun CourseLibraryCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(120.dp)
-                    .background(OrangeBg),
+                    .background(BrandGreenBg),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Book,
                     contentDescription = null,
-                    tint = BrandOrange,
+                    tint = BrandGreen,
                     modifier = Modifier.size(42.dp)
                 )
             }
@@ -375,8 +391,8 @@ fun CourseLibraryCard(
                 // Enrolled Badge
                 Surface(
                     shape = RoundedCornerShape(100.dp),
-                    color = OrangeBg,
-                    border = BorderStroke(1.dp, OrangeBorder)
+                    color = BrandGreenBg,
+                    border = BorderStroke(1.dp, BrandGreenBorder)
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
@@ -385,7 +401,7 @@ fun CourseLibraryCard(
                         Icon(
                             imageVector = Icons.Default.CheckCircle,
                             contentDescription = null,
-                            tint = BrandOrange,
+                            tint = BrandGreen,
                             modifier = Modifier.size(10.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
@@ -393,7 +409,7 @@ fun CourseLibraryCard(
                             text = "ENROLLED",
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
-                            color = BrandOrange,
+                            color = BrandGreen,
                             letterSpacing = 0.5.sp
                         )
                     }
@@ -433,8 +449,8 @@ fun CourseLibraryCard(
                 ) {
                     Surface(
                         shape = RoundedCornerShape(8.dp),
-                        color = OrangeBg,
-                        border = BorderStroke(1.dp, OrangeBorder)
+                        color = BrandGreenBg,
+                        border = BorderStroke(1.dp, BrandGreenBorder)
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
@@ -443,7 +459,7 @@ fun CourseLibraryCard(
                             Icon(
                                 imageVector = Icons.Default.PlayArrow,
                                 contentDescription = null,
-                                tint = BrandOrange,
+                                tint = BrandGreen,
                                 modifier = Modifier.size(12.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
@@ -451,7 +467,7 @@ fun CourseLibraryCard(
                                 text = "Continue",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = BrandOrange
+                                color = BrandGreen
                             )
                         }
                     }
@@ -459,7 +475,7 @@ fun CourseLibraryCard(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                         contentDescription = "Open",
-                        tint = BrandOrange,
+                        tint = BrandGreen,
                         modifier = Modifier.size(16.dp)
                     )
                 }

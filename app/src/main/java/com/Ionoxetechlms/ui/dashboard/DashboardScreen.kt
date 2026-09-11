@@ -86,9 +86,14 @@ import com.Ionoxetechlms.ui.theme.IONOXELMSTheme
 import com.Ionoxetechlms.ui.theme.ProfessionalGreen
 import kotlinx.coroutines.launch
 
+val BrandGreen = Color(0xFF16A34A)
+val BrandGreenDark = Color(0xFF15803D)
+val BrandGreenBg = Color(0xFFF0FDF4)
+val BrandGreenBorder = Color(0x3316A34A)
+
 /**
  * Student Dashboard Screen for Ionoxetech LMS Application
- * Synced with dashboard.php web layout
+ * Synced with Brand Green #16A34A Primary Palette
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -193,7 +198,7 @@ fun DashboardContent(
                         BadgedBox(
                             badge = {
                                 if (notifCount > 0) {
-                                    Badge(containerColor = Color(0xFFF97316)) {
+                                    Badge(containerColor = BrandGreen) {
                                         Text(text = notifCount.toString(), color = Color.White)
                                     }
                                 }
@@ -213,7 +218,7 @@ fun DashboardContent(
                             .padding(end = 12.dp)
                             .size(36.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFFF97316))
+                            .background(BrandGreen)
                             .clickable { onLogoutClick() },
                         contentAlignment = Alignment.Center
                     ) {
@@ -373,8 +378,8 @@ fun WelcomeStripBanner(
 
             Surface(
                 shape = RoundedCornerShape(8.dp),
-                color = Color(0xFFFFF7ED),
-                border = BorderStroke(1.dp, Color(0xFFFED7AA))
+                color = BrandGreenBg,
+                border = BorderStroke(1.dp, BrandGreenBorder)
             ) {
                 Row(
                     modifier = Modifier
@@ -391,7 +396,7 @@ fun WelcomeStripBanner(
                         text = if (pendingTasks > 0) "You have $pendingTasks pending task(s) to complete." else "You're all caught up with your tasks!",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFFC2410C)
+                        color = BrandGreenDark
                     )
                 }
             }
@@ -417,8 +422,8 @@ fun StatsSummaryRow(
             title = "Enrolled",
             value = enrolled.toString(),
             icon = Icons.Default.Book,
-            accentColor = Color(0xFFF97316),
-            bgColor = Color(0xFFFFF7ED)
+            accentColor = BrandGreen,
+            bgColor = BrandGreenBg
         )
 
         StatCard(
@@ -745,13 +750,13 @@ fun CourseCardItem(
                 modifier = Modifier
                     .size(48.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(Color(0xFFFFF7ED)),
+                    .background(BrandGreenBg),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.MenuBook,
                     contentDescription = null,
-                    tint = Color(0xFFF97316),
+                    tint = BrandGreen,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -890,14 +895,14 @@ fun DashboardBottomNavigation(
             onClick = { onTabSelected(0) },
             icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
             label = { Text("Home", fontSize = 10.sp) },
-            colors = NavigationBarItemDefaults.colors(selectedIconColor = Color(0xFFF97316), selectedTextColor = Color(0xFFF97316))
+            colors = NavigationBarItemDefaults.colors(selectedIconColor = BrandGreen, selectedTextColor = BrandGreen)
         )
         NavigationBarItem(
             selected = selectedTab == 1,
             onClick = { onTabSelected(1) },
             icon = { Icon(Icons.Default.MenuBook, contentDescription = "Courses") },
             label = { Text("Courses", fontSize = 10.sp) },
-            colors = NavigationBarItemDefaults.colors(selectedIconColor = Color(0xFFF97316), selectedTextColor = Color(0xFFF97316))
+            colors = NavigationBarItemDefaults.colors(selectedIconColor = BrandGreen, selectedTextColor = BrandGreen)
         )
         NavigationBarItem(
             selected = selectedTab == 2,
@@ -906,7 +911,7 @@ fun DashboardBottomNavigation(
                 BadgedBox(
                     badge = {
                         if (pendingTasks > 0) {
-                            Badge(containerColor = Color(0xFFF97316)) {
+                            Badge(containerColor = BrandGreen) {
                                 Text(pendingTasks.toString(), color = Color.White)
                             }
                         }
@@ -916,21 +921,21 @@ fun DashboardBottomNavigation(
                 }
             },
             label = { Text("Tasks", fontSize = 10.sp) },
-            colors = NavigationBarItemDefaults.colors(selectedIconColor = Color(0xFFF97316), selectedTextColor = Color(0xFFF97316))
+            colors = NavigationBarItemDefaults.colors(selectedIconColor = BrandGreen, selectedTextColor = BrandGreen)
         )
         NavigationBarItem(
             selected = selectedTab == 3,
             onClick = { onTabSelected(3) },
             icon = { Icon(Icons.Default.CalendarMonth, contentDescription = "Attendance") },
             label = { Text("Attendance", fontSize = 10.sp) },
-            colors = NavigationBarItemDefaults.colors(selectedIconColor = Color(0xFFF97316), selectedTextColor = Color(0xFFF97316))
+            colors = NavigationBarItemDefaults.colors(selectedIconColor = BrandGreen, selectedTextColor = BrandGreen)
         )
         NavigationBarItem(
             selected = selectedTab == 4,
             onClick = { onTabSelected(4) },
             icon = { Icon(Icons.Default.Person, contentDescription = "Profile") },
             label = { Text("Profile", fontSize = 10.sp) },
-            colors = NavigationBarItemDefaults.colors(selectedIconColor = Color(0xFFF97316), selectedTextColor = Color(0xFFF97316))
+            colors = NavigationBarItemDefaults.colors(selectedIconColor = BrandGreen, selectedTextColor = BrandGreen)
         )
     }
 }
@@ -949,7 +954,7 @@ fun createMockDashboardData(studentName: String = "Student"): DashboardResponse 
         notifCount = 1,
         nextClass = NextClass(
             courseTitle = "Artificial Intelligence & Machine Learning",
-            trainerName = "Lead AI Instructor",
+            trainerName = "Lead Instructor",
             startDate = "Today",
             startTime = "06:00 PM",
             meetingLink = "https://meet.google.com"
@@ -983,7 +988,7 @@ fun createMockDashboardData(studentName: String = "Student"): DashboardResponse 
         jobs = listOf(
             JobItem(
                 id = 2,
-                title = "AI/ML Engineer",
+                title = "Machine Learning Engineer",
                 company = "Levino Softlabs",
                 location = "Work From Office",
                 description = "Build and train machine learning models.",
