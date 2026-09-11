@@ -63,7 +63,7 @@ val PurpleBg = Color(0xFFF5F3FF)
 
 /**
  * Assignments & Tasks Screen for Ionoxetech LMS Application
- * Embedded directly inside Dashboard scaffold without duplicate top bar
+ * Shows real data from database without mock dummy assignments
  */
 @Composable
 fun AssignmentsScreen(
@@ -81,38 +81,11 @@ fun AssignmentsScreen(
             val res = ApiClient.apiService.getAssignments(studentId)
             if (res.isSuccessful && res.body() != null) {
                 assignmentsData = res.body()
+            } else {
+                assignmentsData = AssignmentListResponse(status = "empty", total = 0, assignments = emptyList())
             }
         } catch (_: Exception) {
-            // Demo Fallback
-            assignmentsData = AssignmentListResponse(
-                status = "success",
-                total = 2,
-                assignments = listOf(
-                    AssignmentItem(
-                        id = 1,
-                        title = "Machine Learning Regression Model Assignment",
-                        courseName = "Artificial Intelligence & Machine Learning",
-                        description = "Implement Linear and Polynomial Regression algorithms using Python and NumPy.",
-                        dueDate = "10 May 2026",
-                        totalMarks = 100,
-                        resolvedType = "mcq",
-                        state = "open"
-                    ),
-                    AssignmentItem(
-                        id = 2,
-                        title = "Full Stack MERN CRUD Application",
-                        courseName = "Full Stack Web Development",
-                        description = "Build a responsive REST API backend with Express and Node.js connected to React frontend.",
-                        dueDate = "20 Apr 2026",
-                        totalMarks = 100,
-                        obtainedMarks = 92,
-                        submittedAt = "19 Apr 2026",
-                        filePath = "https://ionox.in/uploads/assignments/mern_app.pdf",
-                        resolvedType = "project",
-                        state = "submitted"
-                    )
-                )
-            )
+            assignmentsData = AssignmentListResponse(status = "empty", total = 0, assignments = emptyList())
         } finally {
             isLoading = false
         }

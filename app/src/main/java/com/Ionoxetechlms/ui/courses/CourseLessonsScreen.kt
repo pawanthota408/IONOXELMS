@@ -1,9 +1,11 @@
 package com.Ionoxetechlms.ui.courses
 
 import android.annotation.SuppressLint
-import android.content.Intent
-import android.net.Uri
+import android.graphics.Bitmap
+import android.util.Log
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.compose.BackHandler
@@ -24,14 +26,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Videocam
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -54,7 +54,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -67,6 +66,8 @@ import com.Ionoxetechlms.data.api.LessonItem
 import com.Ionoxetechlms.ui.dashboard.DashboardBottomNavigation
 import com.Ionoxetechlms.ui.theme.IONOXELMSTheme
 import com.Ionoxetechlms.ui.theme.ProfessionalGreen
+
+private const val TAG = "CourseLessons"
 
 val PlayerNavy = Color(0xFF0F172A)
 val PrimaryIndigo = Color(0xFF4F46E5)
@@ -84,54 +85,57 @@ fun CourseLessonsScreen(
     courseId: Int = 1,
     onBackClick: () -> Unit = {}
 ) {
-    val context = LocalContext.current
     var isLoading by remember { mutableStateOf(true) }
     var courseData by remember { mutableStateOf<CourseLessonsResponse?>(null) }
-    var activeLessonIndex by remember { mutableIntStateOf(0) }
 
-    // System Back Handler: Returns 1 step back to MAIN screen
-    BackHandler {
-        onBackClick()
-    }
+    // -1 = nothing selected. Prevents empty/first lesson auto-play.
+    var activeLessonIndex by remember { mutableIntStateOf(-1) }
+
+    BackHandler { onBackClick() }
 
     val completedLessons = remember { mutableStateMapOf<Int, Boolean>() }
 
-    LaunchedEffect(courseId) {
+    // ── Load lessons from API ─────────────────────────────────────────────
+    LaunchedEffect(studentId, courseId) {
+        isLoading = true
         try {
+            Log.d(TAG, "Fetching lessons: studentId=$studentId courseId=$courseId")
             val res = ApiClient.apiService.getCourseLessons(studentId, courseId)
-            if (res.isSuccessful && res.body() != null) {
-                courseData = res.body()
+
+            if (res.isSuccessful) {
+                val body = res.body()
+                if (body != null) {
+                    Log.d(TAG, "OK status=${body.status} courseId=${body.courseId} " +
+                            "title='${body.title}' totalLessons=${body.totalLessons} " +
+                            "lessons.size=${body.lessons.size}")
+                    body.lessons.forEachIndexed { i, l ->
+                        Log.d(TAG, "  lesson[$i] id=${l.id} title='${l.title}' video='${l.videoUrl}'")
+                    }
+                    courseData = body
+
+                    // Auto-select first lesson ONLY if there is one
+                    if (body.lessons.isNotEmpty() && activeLessonIndex < 0) {
+                        activeLessonIndex = 0
+                    }
+                } else {
+                    Log.w(TAG, "OK but body is null")
+                    courseData = emptyCourse(courseId)
+                }
+            } else {
+                val errBody = try { res.errorBody()?.string() } catch (_: Exception) { null }
+                Log.e(TAG, "HTTP ${res.code()} ${res.message()} errBody=$errBody")
+                courseData = emptyCourse(courseId)
             }
-        } catch (_: Exception) {
-            // Mock Fallback
-            courseData = CourseLessonsResponse(
-                status = "success",
-                courseId = courseId,
-                title = "Artificial Intelligence & Machine Learning",
-                description = "Master core Machine Learning and Artificial Intelligence algorithms.",
-                totalLessons = 3,
-                lessons = listOf(
-                    LessonItem(
-                        id = 101,
-                        title = "Lesson 1: Introduction & Environment Setup",
-                        videoUrl = "https://www.youtube.com/embed/dQw4w9WgXcQ",
-                        description = "Welcome to the course! In this lesson we will set up python and Jupyter Notebooks."
-                    ),
-                    LessonItem(
-                        id = 102,
-                        title = "Lesson 2: Core ML Concepts & Architecture",
-                        videoUrl = "https://www.youtube.com/embed/dQw4w9WgXcQ",
-                        description = "Learn fundamental concepts of Supervised vs Unsupervised machine learning models."
-                    )
-                )
-            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Exception during API call: ${e.javaClass.simpleName}: ${e.message}", e)
+            courseData = emptyCourse(courseId)
         } finally {
             isLoading = false
         }
     }
 
     val lessons = courseData?.lessons ?: emptyList()
-    val totalLessons = lessons.size.coerceAtLeast(1)
+    val totalLessons = lessons.size
     val completedCount = completedLessons.size
 
     Scaffold(
@@ -151,7 +155,7 @@ fun CourseLessonsScreen(
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
 
-                // Header Navigation Bar
+                // ── Header Bar ────────────────────────────────────────────
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     color = Color.White,
@@ -169,7 +173,11 @@ fun CourseLessonsScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             IconButton(onClick = onBackClick) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = PlayerNavy)
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Back",
+                                    tint = PlayerNavy
+                                )
                             }
                             Spacer(modifier = Modifier.width(4.dp))
                             Column {
@@ -181,21 +189,28 @@ fun CourseLessonsScreen(
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
-                                Text(text = "$totalLessons Lessons available", fontSize = 11.sp, color = MutedText)
+                                Text(
+                                    text = if (totalLessons == 0) "No lessons available"
+                                    else "$totalLessons Lessons available",
+                                    fontSize = 11.sp,
+                                    color = MutedText
+                                )
                             }
                         }
 
-                        // Progress Pill
                         Column(horizontalAlignment = Alignment.End) {
                             Text(
-                                text = "$completedCount / $totalLessons Done",
+                                text = "$completedCount / ${totalLessons.coerceAtLeast(1)} Done",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = PrimaryIndigo
                             )
                             Spacer(modifier = Modifier.height(3.dp))
                             LinearProgressIndicator(
-                                progress = { (completedCount / totalLessons.toFloat()).coerceIn(0f, 1f) },
+                                progress = {
+                                    if (totalLessons == 0) 0f
+                                    else (completedCount / totalLessons.toFloat()).coerceIn(0f, 1f)
+                                },
                                 modifier = Modifier
                                     .width(80.dp)
                                     .height(5.dp)
@@ -211,25 +226,53 @@ fun CourseLessonsScreen(
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(color = PrimaryIndigo)
                     }
+                } else if (lessons.isEmpty()) {
+                    // ── Empty state ───────────────────────────────────────
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(32.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.PlayArrow,
+                                contentDescription = null,
+                                tint = MutedText,
+                                modifier = Modifier.size(56.dp)
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                "No lessons yet",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = PlayerNavy
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                "Content will be added by your trainer soon.",
+                                fontSize = 12.sp,
+                                color = MutedText
+                            )
+                        }
+                    }
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // In-App Video Player Card
+                        // ── Video Player Card ─────────────────────────────
                         item {
+                            val safeIndex = activeLessonIndex.coerceIn(0, lessons.lastIndex)
+                            val activeLesson = lessons.getOrNull(safeIndex)
+                            val rawVideoUrl = activeLesson?.videoUrl?.trim().orEmpty()
+
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(16.dp),
                                 colors = CardDefaults.cardColors(containerColor = PlayerNavy),
                                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                             ) {
-                                val activeLesson = lessons.getOrNull(activeLessonIndex.coerceIn(0, lessons.size - 1))
-                                val rawVideoUrl = activeLesson?.videoUrl ?: ""
-
                                 Column {
-                                    // Embedded In-App Video Player
                                     Box(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -241,14 +284,22 @@ fun CourseLessonsScreen(
                                             InAppVideoWebView(videoUrl = rawVideoUrl)
                                         } else {
                                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                                Icon(Icons.Default.PlayArrow, contentDescription = "Play", tint = Color.White, modifier = Modifier.size(42.dp))
+                                                Icon(
+                                                    Icons.Default.PlayArrow,
+                                                    contentDescription = "Play",
+                                                    tint = Color.White,
+                                                    modifier = Modifier.size(42.dp)
+                                                )
                                                 Spacer(modifier = Modifier.height(6.dp))
-                                                Text("Select a lesson to start video", fontSize = 12.sp, color = Color.White.copy(alpha = 0.7f))
+                                                Text(
+                                                    "No video for this lesson",
+                                                    fontSize = 12.sp,
+                                                    color = Color.White.copy(alpha = 0.7f)
+                                                )
                                             }
                                         }
                                     }
 
-                                    // Active Lesson Title & Description
                                     Column(modifier = Modifier.padding(18.dp)) {
                                         Row(
                                             modifier = Modifier.fillMaxWidth(),
@@ -273,10 +324,15 @@ fun CourseLessonsScreen(
 
                                             OutlinedButton(
                                                 onClick = {
-                                                    if (isDone) completedLessons.remove(activeId) else completedLessons[activeId] = true
+                                                    if (isDone) completedLessons.remove(activeId)
+                                                    else completedLessons[activeId] = true
                                                 },
                                                 shape = RoundedCornerShape(8.dp),
-                                                border = BorderStroke(1.dp, if (isDone) ProfessionalGreen else Color.White.copy(alpha = 0.3f))
+                                                border = BorderStroke(
+                                                    1.dp,
+                                                    if (isDone) ProfessionalGreen
+                                                    else Color.White.copy(alpha = 0.3f)
+                                                )
                                             ) {
                                                 Icon(
                                                     imageVector = Icons.Default.CheckCircle,
@@ -297,7 +353,7 @@ fun CourseLessonsScreen(
                                         Spacer(modifier = Modifier.height(10.dp))
 
                                         Text(
-                                            text = activeLesson?.title ?: "Select a lesson to start",
+                                            text = activeLesson?.title ?: "Select a lesson",
                                             fontSize = 16.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = Color.White
@@ -306,7 +362,9 @@ fun CourseLessonsScreen(
                                         Spacer(modifier = Modifier.height(4.dp))
 
                                         Text(
-                                            text = activeLesson?.description ?: "No additional lesson notes provided.",
+                                            text = activeLesson?.description
+                                                ?.takeIf { it.isNotBlank() }
+                                                ?: "No additional lesson notes provided.",
                                             fontSize = 12.sp,
                                             color = Color(0xFF94A3B8),
                                             lineHeight = 18.sp
@@ -316,17 +374,17 @@ fun CourseLessonsScreen(
                             }
                         }
 
-                        // Lessons Playlist Header
+                        // ── Playlist Header ───────────────────────────────
                         item {
                             Text(
-                                text = "Course Content ($totalLessons Lessons)",
+                                text = "Course Content ($totalLessons ${if (totalLessons == 1) "Lesson" else "Lessons"})",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = PlayerNavy
                             )
                         }
 
-                        // Playlist Items List
+                        // ── Playlist ──────────────────────────────────────
                         itemsIndexed(lessons) { index, lesson ->
                             val isPlaying = (index == activeLessonIndex)
                             val isDone = (completedLessons[lesson.id] == true)
@@ -339,7 +397,10 @@ fun CourseLessonsScreen(
                                 colors = CardDefaults.cardColors(
                                     containerColor = if (isPlaying) IndigoSoft else Color.White
                                 ),
-                                border = BorderStroke(1.dp, if (isPlaying) PrimaryIndigo else CardBorder)
+                                border = BorderStroke(
+                                    1.dp,
+                                    if (isPlaying) PrimaryIndigo else CardBorder
+                                )
                             ) {
                                 Row(
                                     modifier = Modifier
@@ -351,11 +412,19 @@ fun CourseLessonsScreen(
                                         modifier = Modifier
                                             .size(36.dp)
                                             .clip(RoundedCornerShape(8.dp))
-                                            .background(if (isPlaying) PrimaryIndigo else Color(0xFFF1F5F9)),
+                                            .background(
+                                                if (isPlaying) PrimaryIndigo
+                                                else Color(0xFFF1F5F9)
+                                            ),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         if (isPlaying) {
-                                            Icon(Icons.Default.Videocam, contentDescription = "Playing", tint = Color.White, modifier = Modifier.size(18.dp))
+                                            Icon(
+                                                Icons.Default.Videocam,
+                                                contentDescription = "Playing",
+                                                tint = Color.White,
+                                                modifier = Modifier.size(18.dp)
+                                            )
                                         } else {
                                             Text(
                                                 text = "${index + 1}",
@@ -370,7 +439,7 @@ fun CourseLessonsScreen(
 
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = lesson.title ?: "Lesson",
+                                            text = lesson.title ?: "Lesson ${index + 1}",
                                             fontSize = 13.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = if (isPlaying) PrimaryIndigo else PlayerNavy,
@@ -385,7 +454,12 @@ fun CourseLessonsScreen(
                                     }
 
                                     if (isDone) {
-                                        Icon(Icons.Default.CheckCircle, contentDescription = "Done", tint = ProfessionalGreen, modifier = Modifier.size(18.dp))
+                                        Icon(
+                                            Icons.Default.CheckCircle,
+                                            contentDescription = "Done",
+                                            tint = ProfessionalGreen,
+                                            modifier = Modifier.size(18.dp)
+                                        )
                                     }
                                 }
                             }
@@ -398,14 +472,29 @@ fun CourseLessonsScreen(
 }
 
 /**
+ * Empty course response — used when API fails so the UI shows the
+ * "No lessons yet" state instead of a fake playlist.
+ */
+private fun emptyCourse(courseId: Int) = CourseLessonsResponse(
+    status = "empty",
+    courseId = courseId,
+    title = null,
+    description = null,
+    thumbnail = null,
+    totalLessons = 0,
+    lessons = emptyList()
+)
+
+/**
  * Embedded In-App WebView Video Player
+ * Logs page loads and errors so you can see WHY a video fails to render.
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun InAppVideoWebView(videoUrl: String) {
-    val embedUrl = remember(videoUrl) {
-        formatEmbedVideoUrl(videoUrl)
-    }
+    val embedUrl = remember(videoUrl) { formatEmbedVideoUrl(videoUrl) }
+
+    Log.d(TAG, "InAppVideoWebView: raw='$videoUrl' → embed='$embedUrl'")
 
     AndroidView(
         modifier = Modifier.fillMaxSize(),
@@ -415,33 +504,56 @@ fun InAppVideoWebView(videoUrl: String) {
                 settings.domStorageEnabled = true
                 settings.allowFileAccess = true
                 settings.mediaPlaybackRequiresUserGesture = false
-                webViewClient = WebViewClient()
+
+                webViewClient = object : WebViewClient() {
+                    override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+                        Log.d(TAG, "WebView onPageStarted: $url")
+                    }
+                    override fun onPageFinished(view: WebView?, url: String?) {
+                        Log.d(TAG, "WebView onPageFinished: $url")
+                    }
+                    override fun onReceivedError(
+                        view: WebView?,
+                        request: WebResourceRequest?,
+                        error: WebResourceError?
+                    ) {
+                        Log.e(
+                            TAG,
+                            "WebView onReceivedError: url=${request?.url} " +
+                                    "code=${error?.errorCode} desc=${error?.description}"
+                        )
+                    }
+                }
                 webChromeClient = WebChromeClient()
                 loadUrl(embedUrl)
             }
         },
         update = { webView ->
-            webView.loadUrl(embedUrl)
+            if (webView.url != embedUrl) {
+                Log.d(TAG, "WebView update() → loadUrl($embedUrl)")
+                webView.loadUrl(embedUrl)
+            }
         }
     )
 }
 
 fun formatEmbedVideoUrl(url: String): String {
     if (url.isBlank()) return "about:blank"
+    val trimmed = url.trim()
     return when {
-        url.contains("youtube.com/watch?v=") -> {
-            val videoId = url.substringAfter("v=").substringBefore("&")
+        trimmed.contains("youtube.com/watch?v=") -> {
+            val videoId = trimmed.substringAfter("v=").substringBefore("&")
             "https://www.youtube-nocookie.com/embed/$videoId?autoplay=1"
         }
-        url.contains("youtu.be/") -> {
-            val videoId = url.substringAfter("youtu.be/").substringBefore("?")
+        trimmed.contains("youtu.be/") -> {
+            val videoId = trimmed.substringAfter("youtu.be/").substringBefore("?")
             "https://www.youtube-nocookie.com/embed/$videoId?autoplay=1"
         }
-        url.contains("vimeo.com/") -> {
-            val videoId = url.substringAfter("vimeo.com/").substringBefore("?")
+        trimmed.contains("vimeo.com/") -> {
+            val videoId = trimmed.substringAfter("vimeo.com/").substringBefore("?")
             "https://player.vimeo.com/video/$videoId?autoplay=1"
         }
-        else -> url
+        else -> trimmed
     }
 }
 
