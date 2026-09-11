@@ -54,6 +54,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -85,6 +86,7 @@ fun CourseLessonsScreen(
     courseId: Int = 1,
     onBackClick: () -> Unit = {}
 ) {
+    val context = LocalContext.current
     var isLoading by remember { mutableStateOf(true) }
     var courseData by remember { mutableStateOf<CourseLessonsResponse?>(null) }
 
@@ -105,7 +107,7 @@ fun CourseLessonsScreen(
             if (res.isSuccessful) {
                 val body = res.body()
                 if (body != null) {
-                    Log.d(TAG, "OK status=${body.status} courseId=${body.courseId} " +
+                    Log.d(TAG, "OK  status=${body.status} courseId=${body.courseId} " +
                             "title='${body.title}' totalLessons=${body.totalLessons} " +
                             "lessons.size=${body.lessons.size}")
                     body.lessons.forEachIndexed { i, l ->
@@ -529,6 +531,7 @@ fun InAppVideoWebView(videoUrl: String) {
             }
         },
         update = { webView ->
+            // Only reload if URL actually changed — prevents flicker
             if (webView.url != embedUrl) {
                 Log.d(TAG, "WebView update() → loadUrl($embedUrl)")
                 webView.loadUrl(embedUrl)
@@ -539,21 +542,33 @@ fun InAppVideoWebView(videoUrl: String) {
 
 fun formatEmbedVideoUrl(url: String): String {
     if (url.isBlank()) return "about:blank"
-    val trimmed = url.trim()
     return when {
-        trimmed.contains("youtube.com/watch?v=") -> {
-            val videoId = trimmed.substringAfter("v=").substringBefore("&")
-            "https://www.youtube-nocookie.com/embed/$videoId?autoplay=1"
+        url.contains("youtube.com/watch?v=") -> {
+            val videoId = url.substringAfter("v=").substringBefore("&")
+            "https://www.youtube-nocookie.com/embed/$videoId?autoplay=1&rel=0"
         }
-        trimmed.contains("youtu.be/") -> {
-            val videoId = trimmed.substringAfter("youtu.be/").substringBefore("?")
-            "https://www.youtube-nocookie.com/embed/$videoId?autoplay=1"
+        url.contains("youtu.be/") -> {
+            val videoId = url.substringAfter("youtu.be/").substringBefore("?")
+            "https://www.youtube-nocookie.com/embed/$videoId?autoplay=1&rel=0"
         }
-        trimmed.contains("vimeo.com/") -> {
-            val videoId = trimmed.substringAfter("vimeo.com/").substringBefore("?")
+        url.contains("youtube.com/shorts/") -> {
+            val videoId = url.substringAfter("youtube.com/shorts/").substringBefore("?")
+            "https://www.youtube-nocookie.com/embed/$videoId?autoplay=1&rel=0"
+        }
+        url.contains("youtube.com/embed/") -> {
+            // Already an embed URL — ensure autoplay
+            if (url.contains("autoplay=")) url
+            else "$url${if (url.contains("?")) "&" else "?"}autoplay=1&rel=0"
+        }
+        url.contains("vimeo.com/") -> {
+            val videoId = url.substringAfter("vimeo.com/").substringBefore("?")
             "https://player.vimeo.com/video/$videoId?autoplay=1"
         }
-        else -> trimmed
+        url.contains("drive.google.com/file/d/") -> {
+            val fileId = url.substringAfter("/file/d/").substringBefore("/")
+            "https://drive.google.com/file/d/$fileId/preview"
+        }
+        else -> url
     }
 }
 

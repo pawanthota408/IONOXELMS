@@ -10,7 +10,6 @@ import retrofit2.http.Query
 
 interface LmsApiService {
 
-    // Clean URL endpoints without .php to avoid Hostinger hPanel 301 redirects
     @FormUrlEncoded
     @POST("api/login")
     suspend fun loginForm(
@@ -86,8 +85,14 @@ interface LmsApiService {
         @Query("student_id") studentId: Int
     ): Response<CertificateResponse>
 
-    @GET("api/course_lessons")
+    @GET("api/course_lesson")
     suspend fun getCourseLessons(
+        @Query("student_id") studentId: Int,
+        @Query("course_id") courseId: Int
+    ): Response<CourseLessonsResponse>
+
+    @GET("course_lesson.php")
+    suspend fun getCourseLessonsDirect(
         @Query("student_id") studentId: Int,
         @Query("course_id") courseId: Int
     ): Response<CourseLessonsResponse>
